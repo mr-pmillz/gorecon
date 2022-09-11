@@ -64,7 +64,7 @@ func generateReport(workspace, creator, company string) error {
 	if err != nil {
 		return err
 	}
-	workReportDir := usr.HomeDir
+	workReportDir := usr.HomeDir + "/work"
 	reportFormats := []string{"reporting/csv", "reporting/html"}
 	now := time.Now()
 	timestamp := now.Format("01-02-2006")
