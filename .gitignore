@@ -1,0 +1,11 @@
+/.idea
+/builds
+/bin
+*.log
+config.yaml
+config/config.yaml
+coverage/*
+todo.txt
+gorecon
+*.txt
+config/testconfig.yaml
