@@ -1,7 +1,9 @@
-COMPANY_NAME: "TODO"
-WORKSPACE_DIR: "TODO"
+COMPANY: "TODO"
+CREATOR: "TODO"
 WORKSPACE: "TODO"
-PRIMARY_DOMAIN: "TODO"
+DOMAIN: "domains.txt"
+MODULES: "modules.txt"
+NETBLOCK: "netblocks.txt"
+OUT_OF_SCOPE: "out-of-scope.txt"
 
-# RECON-NG CONFIG
 # TODO

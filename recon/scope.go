@@ -50,19 +50,21 @@ func NewScope(opts *Options) (*Hosts, error) {
 	}
 
 	// parse --netblock file into scope object
-	if exists, err := localio.Exists(opts.NetBlock); exists && err == nil {
-		netblocks, err := localio.ReadLines(opts.NetBlock)
-		if err != nil {
-			return nil, err
-		}
-		for _, netblock := range netblocks {
-			switch {
-			case valid.IsCIDR(netblock):
-				hosts.CIDRs = append(hosts.CIDRs, netblock)
-			case valid.IsIPv4(netblock):
-				hosts.IPv4s = append(hosts.IPv4s, netblock)
-			case valid.IsIPv6(netblock):
-				hosts.IPv6s = append(hosts.IPv6s, netblock)
+	if opts.NetBlock != "" {
+		if exists, err := localio.Exists(opts.NetBlock); exists && err == nil {
+			netblocks, err := localio.ReadLines(opts.NetBlock)
+			if err != nil {
+				return nil, err
+			}
+			for _, netblock := range netblocks {
+				switch {
+				case valid.IsCIDR(netblock):
+					hosts.CIDRs = append(hosts.CIDRs, netblock)
+				case valid.IsIPv4(netblock):
+					hosts.IPv4s = append(hosts.IPv4s, netblock)
+				case valid.IsIPv6(netblock):
+					hosts.IPv6s = append(hosts.IPv6s, netblock)
+				}
 			}
 		}
 	}

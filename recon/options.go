@@ -70,7 +70,7 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 
 	creator, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "creator",
-		IsFilePath: true,
+		IsFilePath: false,
 		Opts:       opts.Creator,
 	})
 	if err != nil {
@@ -80,7 +80,7 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 
 	workspace, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "workspace",
-		IsFilePath: true,
+		IsFilePath: false,
 		Opts:       opts.Workspace,
 	})
 	if err != nil {
