@@ -11,17 +11,19 @@ type Options struct {
 	Domain    string
 	Modules   string
 	NetBlock  string
+	Output    string
 	Workspace string
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
 
-	cmd.PersistentFlags().StringP("company", "c", "", "todo")
+	cmd.PersistentFlags().StringP("company", "c", "", "company name that your testing")
 	cmd.PersistentFlags().StringP("creator", "", "BHIS", "report creator")
-	cmd.PersistentFlags().StringP("domain", "d", "", "todo")
-	cmd.PersistentFlags().StringP("modules", "m", "", "list of recon-ng modules you want to run")
-	cmd.PersistentFlags().StringP("netblock", "n", "", "todo")
-	cmd.PersistentFlags().StringP("workspace", "w", "", "todo")
+	cmd.PersistentFlags().StringP("domain", "d", "", "domain string or file containing domains ex. domains.txt")
+	cmd.PersistentFlags().StringP("modules", "m", "", "list of recon-ng modules you want to run for domains and hosts")
+	cmd.PersistentFlags().StringP("netblock", "n", "", "CIDRs you wish to scan")
+	cmd.PersistentFlags().StringP("workspace", "w", "", "workspace name, use one word")
+	cmd.PersistentFlags().StringP("output", "o", "~/work", "output dir, defaults to ~/work")
 	return nil
 }
 
@@ -85,6 +87,16 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Workspace = workspace.(string)
+
+	output, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
+		Flag:       "output",
+		IsFilePath: true,
+		Opts:       opts.Output,
+	})
+	if err != nil {
+		return err
+	}
+	opts.Output = output.(string)
 
 	return nil
 }

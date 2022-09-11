@@ -292,7 +292,8 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 
 	switch cmdFlag {
 	case "":
-		configVal := viper.GetString(strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_")))
+		flagToUpperConfig := strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_"))
+		configVal := viper.GetString(flagToUpperConfig)
 		envVal, ok := os.LookupEnv(configVal)
 		if ok {
 			if LCMOpts.IsFilePath {

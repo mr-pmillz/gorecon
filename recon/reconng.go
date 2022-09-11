@@ -6,7 +6,6 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"gorecon/localio"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +14,14 @@ import (
 // runModule runs a recon-ng module against the provided domain
 func runModule(workspace, module, domain string) error {
 	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, domain)); err != nil {
+		return err
+	}
+	return nil
+}
+
+// runCompanyModule runs a recon-ng module against the provided domain
+func runCompanyModule(workspace, module, company string) error {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, company)); err != nil {
 		return err
 	}
 	return nil
@@ -59,12 +66,11 @@ func insertNetblocks(workspace string, netblocks []string) error {
 	return nil
 }
 
-func generateReport(workspace, creator, company string) error {
-	usr, err := user.Current()
+func generateReport(workspace, creator, company, output string) error {
+	workReportDir, err := localio.ResolveAbsPath(output)
 	if err != nil {
 		return err
 	}
-	workReportDir := usr.HomeDir + "/work"
 	reportFormats := []string{"reporting/csv", "reporting/html"}
 	now := time.Now()
 	timestamp := now.Format("01-02-2006")
@@ -76,7 +82,7 @@ func generateReport(workspace, creator, company string) error {
 	}
 	for _, report := range reportFormats {
 		ext := strings.Split(report, "/")[1]
-		srcArg := fmt.Sprintf("-o FILENAME=%s/%s-%s.%s", workReportDir, company, timestamp, ext)
+		srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
 		command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
 		if err := localio.RunCommandPipeOutput(command); err != nil {
 			return err
@@ -143,10 +149,17 @@ func RunReconNG(hosts *Hosts, opts *Options) error {
 				}
 			}
 		}
-
 	}
 
-	if err = generateReport(opts.Workspace, opts.Creator, opts.Company); err != nil {
+	for _, module := range modules {
+		if strings.Contains(module, "companies") {
+			if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
 		return err
 	}
 

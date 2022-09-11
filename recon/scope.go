@@ -49,10 +49,6 @@ func NewScope(opts *Options) (*Hosts, error) {
 		}
 	}
 
-	//if err := localio.PrettyPrint(hosts); err != nil {
-	//	return nil, err
-	//}
-
 	// parse --netblock file into scope object
 	if exists, err := localio.Exists(opts.NetBlock); exists && err == nil {
 		netblocks, err := localio.ReadLines(opts.NetBlock)
