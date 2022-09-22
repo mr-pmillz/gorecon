@@ -78,7 +78,7 @@ func NewScope(opts *Options) (*Hosts, error) {
 		}
 	case reflect.String:
 		// parse --netblock file into scope object
-		if opts.NetBlock != "" {
+		if opts.NetBlock.(string) != "" {
 			if exists, err := localio.Exists(opts.NetBlock.(string)); exists && err == nil {
 				netblocks, err := localio.ReadLines(opts.NetBlock.(string))
 				if err != nil {
@@ -93,6 +93,15 @@ func NewScope(opts *Options) (*Hosts, error) {
 					case valid.IsIPv6(netblock):
 						hosts.IPv6s = append(hosts.IPv6s, netblock)
 					}
+				}
+			} else {
+				switch {
+				case valid.IsCIDR(opts.NetBlock.(string)):
+					hosts.CIDRs = append(hosts.CIDRs, opts.NetBlock.(string))
+				case valid.IsIPv4(opts.NetBlock.(string)):
+					hosts.IPv4s = append(hosts.IPv4s, opts.NetBlock.(string))
+				case valid.IsIPv6(opts.NetBlock.(string)):
+					hosts.IPv6s = append(hosts.IPv6s, opts.NetBlock.(string))
 				}
 			}
 		}

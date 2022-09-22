@@ -2,8 +2,6 @@ package recon
 
 import (
 	"fmt"
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/gologger/levels"
 	"gorecon/localio"
 	"os"
 	"path/filepath"
@@ -14,7 +12,9 @@ import (
 
 // configureReconNGDependencies installs any missing recon-ng dependencies
 // installs required python3 packages not included in recon-ng REQUIREMENTS file
-// that are required by various marketplace modules
+// that are required by various marketplace modules.
+// Also fixes censys modules.
+// See https://github.com/lanmaster53/recon-ng/issues/149 https://github.com/censys/censys-recon-ng/issues/5
 func configureReconNGDependencies() error {
 	var notInstalled []string
 	installed, err := localio.NewPipInstalled()
@@ -24,6 +24,7 @@ func configureReconNGDependencies() error {
 	deps := []string{
 		"pyaes",
 		"PyPDF3",
+		"censys",
 	}
 
 	for _, pkg := range deps {
@@ -46,6 +47,54 @@ func configureReconNGDependencies() error {
 				return err
 			}
 		}
+	}
+
+	// fix missing recon-ng censys modules from https://github.com/censys/censys-recon-ng
+	// Manually copy files as the install.sh script included with censys-recon-ng does some extra api key adds for censysio that we should ignore.
+	if err = localio.GitClone("https://github.com/censys/censys-recon-ng", "/tmp/censys-recon-ng"); err != nil {
+		return err
+	}
+	reconDir, err := localio.ResolveAbsPath("~/.recon-ng/modules/recon")
+	if err != nil {
+		return err
+	}
+
+	// Not pretty but it gets the job done. Perhaps an embedded bash script would look prettier, but does the same thing. meh.
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_email_address.py", fmt.Sprintf("%s/companies-contacts/censys_email_address.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_subdomains.py", fmt.Sprintf("%s/companies-domains/censys_subdomains.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-multi/censys_org.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-multi/censys_tls_subjects.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_email_to_domains.py", fmt.Sprintf("%s/contacts-domains/censys_email_to_domains.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_companies.py", fmt.Sprintf("%s/domains-companies/censys_companies.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_domain.py", fmt.Sprintf("%s/domains-hosts/censys_domain.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_query.py", fmt.Sprintf("%s/hosts-hosts/censys_query.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-ports/censys_hostname.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-ports/censys_ip.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_netblock_company.py", fmt.Sprintf("%s/netblocks-companies/censys_netblock_company.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_netblock.py", fmt.Sprintf("%s/netblocks-hosts/censys_netblock.py", reconDir)); err != nil {
+		return err
 	}
 
 	return nil
@@ -152,12 +201,7 @@ func generateReport(workspace, creator, company, output string) error {
 
 // RunReconNG runs all specified modules against the target domain
 func (h *Hosts) RunReconNG(opts *Options) error {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
-	gologger.Info().Str("workspace", opts.Workspace).Msg("Running Recon-ng")
-
-	if err := configureReconNGDependencies(); err != nil {
-		return err
-	}
+	localio.PrintInfo("workspace", opts.Workspace, "Running Recon-ng")
 
 	if err := insertCompany(opts.Workspace, opts.Company); err != nil {
 		return err
@@ -176,6 +220,10 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 	marketPlaceInstallAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace install all\" -x", opts.Workspace)
 	cmds := []string{marketPlaceRefreshAllCMD, marketPlaceInstallAllCMD}
 	if err := localio.RunCommandsPipeOutput(cmds); err != nil {
+		return err
+	}
+
+	if err := configureReconNGDependencies(); err != nil {
 		return err
 	}
 

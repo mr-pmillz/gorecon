@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"io"
@@ -18,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	. "github.com/go-git/go-git/v5/_examples"
 	"github.com/spf13/viper"
 )
 
@@ -108,6 +112,16 @@ func CopyFile(src, dest string) error {
 	return err
 }
 
+// CopyFileIfNotExists copies a file only if it doesn't already exist
+func CopyFileIfNotExists(src, dest string) error {
+	if exists, err := Exists(dest); !exists && err == nil {
+		if err = CopyFile(src, dest); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // TimeTrack ...
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
@@ -179,9 +193,17 @@ func RunCommandsPipeOutput(commands []string) error {
 	return nil
 }
 
+// PrintInfo is a wrapper around gologger Info method
+func PrintInfo(key, val, msg string) {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.Info().Str(key, val).Msg(msg)
+}
+
 // ExecCMD Execute a command
-func ExecCMD(command string) (string, error) {
-	fmt.Printf("[+] %s\n", command)
+func ExecCMD(command string, verbose bool) (string, error) {
+	if verbose {
+		fmt.Printf("[+] %s\n", command)
+	}
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return "", err
@@ -319,7 +341,7 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 				LCMOpts.Opts = configSliceVal
 			} else if configVal != "" {
 				if LCMOpts.IsFilePath {
-					if exists, err := Exists(configVal); exists && err != nil {
+					if exists, err := Exists(configVal); exists && err == nil {
 						absConfigVal, err := ResolveAbsPath(configVal)
 						if err != nil {
 							return nil, err
@@ -402,7 +424,7 @@ type PipInstalled struct {
 func NewPipInstalled() (*PipInstalled, error) {
 	var pip = &PipInstalled{}
 	cmd := "python3 -m pip list | awk '{print $1}'"
-	pipPackages, err := ExecCMD(cmd)
+	pipPackages, err := ExecCMD(cmd, false)
 	if err != nil {
 		return nil, err
 	}
@@ -411,6 +433,22 @@ func NewPipInstalled() (*PipInstalled, error) {
 
 	return pip, nil
 
+}
+
+// GitClone clones a public git repo url to directory
+func GitClone(url, directory string) error {
+	if exists, err := Exists(directory); err == nil && !exists {
+		Info("git clone %s %s", url, directory)
+		_, err := git.PlainClone(directory, false, &git.CloneOptions{
+			URL:      url,
+			Progress: os.Stdout,
+		})
+		CheckIfError(err)
+	} else {
+		fmt.Printf("[+] Repo: %s already exists at %s, skipping... \n", url, directory)
+	}
+
+	return nil
 }
 
 // ReadLines reads a whole file into memory
