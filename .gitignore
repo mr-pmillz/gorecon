@@ -1,9 +1,15 @@
 /.idea
+.idea
 /builds
 /bin
+bin
+bin/
+dist/
+dist
 *.log
 config.yaml
 config/config.yaml
+config/*.yaml
 coverage/*
 todo.txt
 gorecon

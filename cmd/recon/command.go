@@ -43,7 +43,7 @@ var Command = &cobra.Command{
 			panic(err)
 		}
 
-		if err = recon.RunAllRecon(hostScope, &opts.reconOptions); err != nil {
+		if err = hostScope.RunAllRecon(&opts.reconOptions); err != nil {
 			fmt.Println(err.Error())
 			panic(err)
 		}

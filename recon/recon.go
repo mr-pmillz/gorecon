@@ -2,11 +2,15 @@ package recon
 
 import (
 	"fmt"
+	"gorecon/localio"
 )
 
-func RunAllRecon(hosts *Hosts, opts *Options) error {
+func (h *Hosts) RunAllRecon(opts *Options) error {
 	fmt.Println("[+] Running All Recon Modules")
-	if err := RunReconNG(hosts, opts); err != nil {
+	if err := localio.PrettyPrint(h); err != nil {
+		return err
+	}
+	if err := h.RunReconNG(opts); err != nil {
 		return err
 	}
 

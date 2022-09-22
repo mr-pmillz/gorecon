@@ -83,9 +83,19 @@ func generateReport(workspace, creator, company, output string) error {
 	for _, report := range reportFormats {
 		ext := strings.Split(report, "/")[1]
 		srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
-		command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
-		if err := localio.RunCommandPipeOutput(command); err != nil {
-			return err
+		switch ext {
+		case "csv":
+			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\"  %s -x", workspace, report, srcArg)
+			if err := localio.RunCommandPipeOutput(command); err != nil {
+				return err
+			}
+		case "html":
+			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
+			if err := localio.RunCommandPipeOutput(command); err != nil {
+				return err
+			}
+		default:
+			//Do Nothing
 		}
 	}
 
@@ -93,23 +103,19 @@ func generateReport(workspace, creator, company, output string) error {
 }
 
 // RunReconNG runs all specified modules against the target domain
-func RunReconNG(hosts *Hosts, opts *Options) error {
+func (h *Hosts) RunReconNG(opts *Options) error {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
 	gologger.Info().Str("workspace", opts.Workspace).Msg("Running Recon-ng")
-
-	if err := localio.PrettyPrint(hosts); err != nil {
-		return err
-	}
 
 	if err := insertCompany(opts.Workspace, opts.Company); err != nil {
 		return err
 	}
 
-	if err := insertDomains(opts.Workspace, hosts.Domains); err != nil {
+	if err := insertDomains(opts.Workspace, h.Domains); err != nil {
 		return err
 	}
 
-	if err := insertNetblocks(opts.Workspace, hosts.CIDRs); err != nil {
+	if err := insertNetblocks(opts.Workspace, h.CIDRs); err != nil {
 		return err
 	}
 
@@ -131,7 +137,7 @@ func RunReconNG(hosts *Hosts, opts *Options) error {
 	}
 
 	// run all modules against all base domains
-	for _, domain := range hosts.Domains {
+	for _, domain := range h.Domains {
 		for _, module := range modules {
 			if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
 				if err = runModule(opts.Workspace, module, domain); err != nil {
@@ -141,7 +147,7 @@ func RunReconNG(hosts *Hosts, opts *Options) error {
 		}
 	}
 
-	for _, netblock := range hosts.CIDRs {
+	for _, netblock := range h.CIDRs {
 		for _, module := range modules {
 			if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
 				if err = runModule(opts.Workspace, module, netblock); err != nil {
@@ -156,6 +162,12 @@ func RunReconNG(hosts *Hosts, opts *Options) error {
 			if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
 				return err
 			}
+		}
+	}
+
+	for _, module := range modules {
+		if err = runModule(opts.Workspace, module, "default"); err != nil {
+			return err
 		}
 	}
 
