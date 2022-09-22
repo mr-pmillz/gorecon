@@ -3,14 +3,15 @@ package recon
 import (
 	"github.com/spf13/cobra"
 	"gorecon/localio"
+	"reflect"
 )
 
 type Options struct {
 	Company   string
 	Creator   string
-	Domain    string
-	Modules   string
-	NetBlock  string
+	Domain    interface{}
+	Modules   interface{}
+	NetBlock  interface{}
 	Output    string
 	Workspace string
 }
@@ -66,7 +67,13 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	opts.Modules = modules.(string)
+	rt := reflect.TypeOf(modules)
+	switch rt.Kind() {
+	case reflect.Slice:
+		opts.Modules = modules.([]string)
+	case reflect.String:
+		opts.Modules = modules.(string)
+	}
 
 	creator, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "creator",

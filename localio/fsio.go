@@ -282,6 +282,17 @@ type LoadFromCommandOpts struct {
 	Opts           interface{}
 }
 
+type ConfigYaml struct {
+	COMPANY    string   `yaml:"COMPANY"`
+	CREATOR    string   `yaml:"CREATOR"`
+	WORKSPACE  string   `yaml:"WORKSPACE"`
+	OUTPUT     string   `yaml:"OUTPUT"`
+	DOMAIN     []string `yaml:"DOMAIN"`
+	MODULES    []string `yaml:"MODULES"`
+	NETBLOCK   []string `yaml:"NETBLOCK"`
+	OUTOFSCOPE []string `yaml:"OUT_OF_SCOPE"`
+}
+
 // ConfigureFlagOpts sets the cobra flag option to the LoadFromCommandOpts.Opts key
 // it returns the parsed value of the cobra flag from LoadFromCommandOpts.Flag
 func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interface{}, error) {
@@ -295,6 +306,7 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 		flagToUpperConfig := strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_"))
 		configVal := viper.GetString(flagToUpperConfig)
 		envVal, ok := os.LookupEnv(configVal)
+		configSliceVal := viper.GetStringSlice(flagToUpperConfig)
 		if ok {
 			if LCMOpts.IsFilePath {
 				fileExists, err := Exists(envVal)
@@ -314,6 +326,20 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 				LCMOpts.Opts = envVal
 			}
 		} else {
+			if len(configSliceVal) > 0 {
+				PrettyPrint(configSliceVal)
+				if configVal != "" {
+					if LCMOpts.IsFilePath {
+						absConfigVal, err := ResolveAbsPath(configVal)
+						if err != nil {
+							return nil, err
+						}
+						LCMOpts.Opts = absConfigVal
+					} else {
+						LCMOpts.Opts = configVal
+					}
+				}
+			}
 			if configVal != "" {
 				if LCMOpts.IsFilePath {
 					absConfigVal, err := ResolveAbsPath(configVal)
@@ -368,6 +394,7 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 			}
 		}
 	}
+	PrettyPrint(LCMOpts.Opts)
 
 	return LCMOpts.Opts, nil
 }

@@ -10,9 +10,9 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err := localio.PrettyPrint(h); err != nil {
 		return err
 	}
-	if err := h.RunReconNG(opts); err != nil {
-		return err
-	}
+	//if err := h.RunReconNG(opts); err != nil {
+	//	return err
+	//}
 
 	return nil
 }
