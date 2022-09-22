@@ -12,6 +12,45 @@ import (
 	"time"
 )
 
+// configureReconNGDependencies installs any missing recon-ng dependencies
+// installs required python3 packages not included in recon-ng REQUIREMENTS file
+// that are required by various marketplace modules
+func configureReconNGDependencies() error {
+	var notInstalled []string
+	installed, err := localio.NewPipInstalled()
+	if err != nil {
+		return err
+	}
+	deps := []string{
+		"pyaes",
+		"PyPDF3",
+	}
+
+	for _, pkg := range deps {
+		if localio.Contains(installed.Name, pkg) {
+			continue
+		} else {
+			notInstalled = append(notInstalled, pkg)
+		}
+	}
+	if len(notInstalled) >= 1 {
+		packagesToInstall := strings.Join(notInstalled, " ")
+		if localio.IsRoot() {
+			cmd := fmt.Sprintf("python3 -m pip install %s", packagesToInstall)
+			if err := localio.RunCommandPipeOutput(cmd); err != nil {
+				return err
+			}
+		} else {
+			cmd := fmt.Sprintf("python3 -m pip install %s --user", packagesToInstall)
+			if err := localio.RunCommandPipeOutput(cmd); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // runModule runs a recon-ng module against the provided domain
 func runModule(workspace, module, domain string) error {
 	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, domain)); err != nil {
@@ -87,14 +126,22 @@ func generateReport(workspace, creator, company, output string) error {
 		switch ext {
 		case "csv":
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\"  %s -x", workspace, report, srcArg)
-			if err := localio.RunCommandPipeOutput(command); err != nil {
+			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
 		case "html":
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
-			if err := localio.RunCommandPipeOutput(command); err != nil {
+			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
+
+			if !localio.IsHeadless() {
+				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s &", htmlReport)); err != nil {
+					return err
+				}
+			}
+
 		default:
 			//Do Nothing
 		}
@@ -107,6 +154,10 @@ func generateReport(workspace, creator, company, output string) error {
 func (h *Hosts) RunReconNG(opts *Options) error {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
 	gologger.Info().Str("workspace", opts.Workspace).Msg("Running Recon-ng")
+
+	if err := configureReconNGDependencies(); err != nil {
+		return err
+	}
 
 	if err := insertCompany(opts.Workspace, opts.Company); err != nil {
 		return err

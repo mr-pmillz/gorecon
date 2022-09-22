@@ -282,17 +282,6 @@ type LoadFromCommandOpts struct {
 	Opts           interface{}
 }
 
-type ConfigYaml struct {
-	COMPANY    string   `yaml:"COMPANY"`
-	CREATOR    string   `yaml:"CREATOR"`
-	WORKSPACE  string   `yaml:"WORKSPACE"`
-	OUTPUT     string   `yaml:"OUTPUT"`
-	DOMAIN     []string `yaml:"DOMAIN"`
-	MODULES    []string `yaml:"MODULES"`
-	NETBLOCK   []string `yaml:"NETBLOCK"`
-	OUTOFSCOPE []string `yaml:"OUT_OF_SCOPE"`
-}
-
 // ConfigureFlagOpts sets the cobra flag option to the LoadFromCommandOpts.Opts key
 // it returns the parsed value of the cobra flag from LoadFromCommandOpts.Flag
 func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interface{}, error) {
@@ -326,16 +315,19 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 				LCMOpts.Opts = envVal
 			}
 		} else {
-			if len(configSliceVal) > 0 {
-				PrettyPrint(configSliceVal)
+			if len(configSliceVal) > 1 && strings.Contains(configVal, "\n") {
 				LCMOpts.Opts = configSliceVal
 			} else if configVal != "" {
 				if LCMOpts.IsFilePath {
-					absConfigVal, err := ResolveAbsPath(configVal)
-					if err != nil {
-						return nil, err
+					if exists, err := Exists(configVal); exists && err != nil {
+						absConfigVal, err := ResolveAbsPath(configVal)
+						if err != nil {
+							return nil, err
+						}
+						LCMOpts.Opts = absConfigVal
+					} else {
+						LCMOpts.Opts = configVal
 					}
-					LCMOpts.Opts = absConfigVal
 				} else {
 					LCMOpts.Opts = configVal
 				}
@@ -383,9 +375,42 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 			}
 		}
 	}
-	PrettyPrint(LCMOpts.Opts)
 
 	return LCMOpts.Opts, nil
+}
+
+// IsHeadless checks the DISPLAY env var to check if
+// the server you're running this program on has a GUI / Desktop Environment
+func IsHeadless() bool {
+	return len(os.Getenv("DISPLAY")) == 0
+}
+
+// IsRoot checks if the current user is root or not
+func IsRoot() bool {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatalf("[isRoot] Unable to get current user: %s", err)
+	}
+	return currentUser.Username == "root"
+}
+
+type PipInstalled struct {
+	Name []string
+}
+
+// NewPipInstalled returns a slice of all the installed python3 pip packages
+func NewPipInstalled() (*PipInstalled, error) {
+	var pip = &PipInstalled{}
+	cmd := "python3 -m pip list | awk '{print $1}'"
+	pipPackages, err := ExecCMD(cmd)
+	if err != nil {
+		return nil, err
+	}
+	installedList := strings.Split(pipPackages, "\n")
+	pip.Name = append(pip.Name, installedList...)
+
+	return pip, nil
+
 }
 
 // ReadLines reads a whole file into memory

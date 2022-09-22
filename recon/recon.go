@@ -1,12 +1,14 @@
 package recon
 
 import (
-	"fmt"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 	"gorecon/localio"
 )
 
 func (h *Hosts) RunAllRecon(opts *Options) error {
-	fmt.Println("[+] Running All Recon Modules")
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.Info().Str("GoRecon", opts.Company).Msg("Running All Recon Modules!")
 	if err := localio.PrettyPrint(h); err != nil {
 		return err
 	}

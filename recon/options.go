@@ -7,13 +7,14 @@ import (
 )
 
 type Options struct {
-	Company   string
-	Creator   string
-	Domain    interface{}
-	Modules   interface{}
-	NetBlock  interface{}
-	Output    string
-	Workspace string
+	Company    string
+	Creator    string
+	Domain     interface{}
+	Modules    interface{}
+	NetBlock   interface{}
+	OutOfScope interface{}
+	Output     string
+	Workspace  string
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -25,6 +26,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("netblock", "n", "", "CIDRs you wish to scan")
 	cmd.PersistentFlags().StringP("workspace", "w", "", "workspace name, use one word")
 	cmd.PersistentFlags().StringP("output", "o", "~/work", "output dir, defaults to ~/work")
+	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	return nil
 }
 
@@ -85,6 +87,22 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		opts.Modules = modules.([]string)
 	case reflect.String:
 		opts.Modules = modules.(string)
+	}
+
+	outOfScope, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
+		Flag:       "out-of-scope",
+		IsFilePath: true,
+		Opts:       opts.OutOfScope,
+	})
+	if err != nil {
+		return err
+	}
+	rt = reflect.TypeOf(outOfScope)
+	switch rt.Kind() {
+	case reflect.Slice:
+		opts.OutOfScope = outOfScope.([]string)
+	case reflect.String:
+		opts.OutOfScope = outOfScope.(string)
 	}
 
 	creator, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
