@@ -60,40 +60,52 @@ func configureReconNGDependencies() error {
 	}
 
 	// Not pretty but it gets the job done. Perhaps an embedded bash script would look prettier, but does the same thing. meh.
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_email_address.py", fmt.Sprintf("%s/companies-contacts/censys_email_address.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_email_address.py", fmt.Sprintf("%s/companies-contacts/censys_email_address.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_subdomains.py", fmt.Sprintf("%s/companies-domains/censys_subdomains.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_subdomains.py", fmt.Sprintf("%s/companies-domains/censys_subdomains.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-multi/censys_org.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-multi/censys_org.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-multi/censys_tls_subjects.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-multi/censys_tls_subjects.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_email_to_domains.py", fmt.Sprintf("%s/contacts-domains/censys_email_to_domains.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-hosts/censys_org.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_companies.py", fmt.Sprintf("%s/domains-companies/censys_companies.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-hosts/censys_tls_subjects.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_domain.py", fmt.Sprintf("%s/domains-hosts/censys_domain.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_email_to_domains.py", fmt.Sprintf("%s/contacts-domains/censys_email_to_domains.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_query.py", fmt.Sprintf("%s/hosts-hosts/censys_query.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_companies.py", fmt.Sprintf("%s/domains-companies/censys_companies.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-ports/censys_hostname.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_domain.py", fmt.Sprintf("%s/domains-hosts/censys_domain.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-ports/censys_ip.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_query.py", fmt.Sprintf("%s/hosts-hosts/censys_query.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_netblock_company.py", fmt.Sprintf("%s/netblocks-companies/censys_netblock_company.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-hosts/censys_ip.py", reconDir)); err != nil {
 		return err
 	}
-	if err = localio.CopyFileIfNotExists("/tmp/censys-recon-ng/censys_netblock.py", fmt.Sprintf("%s/netblocks-hosts/censys_netblock.py", reconDir)); err != nil {
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-hosts/censys_hostname.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-ports/censys_hostname.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-ports/censys_ip.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_netblock_company.py", fmt.Sprintf("%s/netblocks-companies/censys_netblock_company.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_netblock.py", fmt.Sprintf("%s/netblocks-hosts/censys_netblock.py", reconDir)); err != nil {
 		return err
 	}
 
@@ -223,6 +235,7 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		return err
 	}
 
+	// Ensure recon-ng deps and censysio modules are installed.
 	if err := configureReconNGDependencies(); err != nil {
 		return err
 	}
@@ -234,6 +247,11 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		if err := installMarketPlaceModules(opts.Workspace, modules); err != nil {
 			return err
 		}
+		// Run a second time as
+		if err := configureReconNGDependencies(); err != nil {
+			return err
+		}
+
 		// run all modules against all base domains
 		for _, domain := range h.Domains {
 			for _, module := range modules {
@@ -275,6 +293,9 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 			return err
 		}
 		if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
+			return err
+		}
+		if err := configureReconNGDependencies(); err != nil {
 			return err
 		}
 		// run all modules against all base domains

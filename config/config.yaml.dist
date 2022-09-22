@@ -1,5 +1,5 @@
 COMPANY: "TODO"
-CREATOR: "BHIS"
+CREATOR: "TODO"
 WORKSPACE: "TODO"
 OUTPUT: "/home/YOUR-USERNAME/work"
 DOMAIN: |-
@@ -30,3 +30,4 @@ NETBLOCK: |-
   XXX.XX.XX.X/24
 OUT_OF_SCOPE: |-
   XXX.XX.XX.X/32
+  outofscope.foo.bar.todo.blah

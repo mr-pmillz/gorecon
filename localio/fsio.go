@@ -112,16 +112,6 @@ func CopyFile(src, dest string) error {
 	return err
 }
 
-// CopyFileIfNotExists copies a file only if it doesn't already exist
-func CopyFileIfNotExists(src, dest string) error {
-	if exists, err := Exists(dest); !exists && err == nil {
-		if err = CopyFile(src, dest); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // TimeTrack ...
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
@@ -133,7 +123,7 @@ func TimeTrack(start time.Time, name string) {
 // it returns an error
 func RunCommandPipeOutput(command string) error {
 	defer TimeTrack(time.Now(), command)
-	fmt.Printf("[+] %s\n", command)
+	PrintInfo("Command", command, "Running Command [+]")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return err
