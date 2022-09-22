@@ -7,6 +7,7 @@ import (
 	"gorecon/localio"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -127,51 +128,93 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		return err
 	}
 
-	// install any extra modules not included in "all" ^
-	modules, err := localio.ReadLines(opts.Modules)
-	if err != nil {
-		return err
-	}
-	if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
-		return err
-	}
+	rt := reflect.TypeOf(opts.Modules)
+	switch rt.Kind() {
+	case reflect.Slice:
+		modules := opts.Modules.([]string)
+		if err := installMarketPlaceModules(opts.Workspace, modules); err != nil {
+			return err
+		}
+		// run all modules against all base domains
+		for _, domain := range h.Domains {
+			for _, module := range modules {
+				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
+					if err := runModule(opts.Workspace, module, domain); err != nil {
+						return err
+					}
+				}
+			}
+		}
 
-	// run all modules against all base domains
-	for _, domain := range h.Domains {
+		for _, netblock := range h.CIDRs {
+			for _, module := range modules {
+				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
+					if err := runModule(opts.Workspace, module, netblock); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
 		for _, module := range modules {
-			if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
-				if err = runModule(opts.Workspace, module, domain); err != nil {
+			if strings.Contains(module, "companies") {
+				if err := runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
 					return err
 				}
 			}
 		}
-	}
 
-	for _, netblock := range h.CIDRs {
 		for _, module := range modules {
-			if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
-				if err = runModule(opts.Workspace, module, netblock); err != nil {
+			if err := runModule(opts.Workspace, module, "default"); err != nil {
+				return err
+			}
+		}
+	case reflect.String:
+		// install any extra modules not included in "all" ^
+		modules, err := localio.ReadLines(opts.Modules.(string))
+		if err != nil {
+			return err
+		}
+		if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
+			return err
+		}
+		// run all modules against all base domains
+		for _, domain := range h.Domains {
+			for _, module := range modules {
+				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
+					if err = runModule(opts.Workspace, module, domain); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		for _, netblock := range h.CIDRs {
+			for _, module := range modules {
+				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
+					if err = runModule(opts.Workspace, module, netblock); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		for _, module := range modules {
+			if strings.Contains(module, "companies") {
+				if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
 					return err
 				}
 			}
 		}
-	}
 
-	for _, module := range modules {
-		if strings.Contains(module, "companies") {
-			if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
+		for _, module := range modules {
+			if err = runModule(opts.Workspace, module, "default"); err != nil {
 				return err
 			}
 		}
 	}
 
-	for _, module := range modules {
-		if err = runModule(opts.Workspace, module, "default"); err != nil {
-			return err
-		}
-	}
-
-	if err = generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
+	if err := generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
 		return err
 	}
 

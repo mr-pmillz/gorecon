@@ -328,19 +328,8 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 		} else {
 			if len(configSliceVal) > 0 {
 				PrettyPrint(configSliceVal)
-				if configVal != "" {
-					if LCMOpts.IsFilePath {
-						absConfigVal, err := ResolveAbsPath(configVal)
-						if err != nil {
-							return nil, err
-						}
-						LCMOpts.Opts = absConfigVal
-					} else {
-						LCMOpts.Opts = configVal
-					}
-				}
-			}
-			if configVal != "" {
+				LCMOpts.Opts = configSliceVal
+			} else if configVal != "" {
 				if LCMOpts.IsFilePath {
 					absConfigVal, err := ResolveAbsPath(configVal)
 					if err != nil {

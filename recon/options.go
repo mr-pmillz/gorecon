@@ -47,7 +47,13 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	opts.Domain = domain.(string)
+	rt := reflect.TypeOf(domain)
+	switch rt.Kind() {
+	case reflect.Slice:
+		opts.Domain = domain.([]string)
+	case reflect.String:
+		opts.Domain = domain.(string)
+	}
 
 	netblock, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "netblock",
@@ -57,7 +63,13 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	opts.NetBlock = netblock.(string)
+	rt = reflect.TypeOf(netblock)
+	switch rt.Kind() {
+	case reflect.Slice:
+		opts.NetBlock = netblock.([]string)
+	case reflect.String:
+		opts.NetBlock = netblock.(string)
+	}
 
 	modules, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "modules",
@@ -67,7 +79,7 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	rt := reflect.TypeOf(modules)
+	rt = reflect.TypeOf(modules)
 	switch rt.Kind() {
 	case reflect.Slice:
 		opts.Modules = modules.([]string)
