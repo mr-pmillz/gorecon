@@ -2,14 +2,115 @@ package recon
 
 import (
 	"fmt"
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/gologger/levels"
 	"gorecon/localio"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 )
+
+// configureReconNGDependencies installs any missing recon-ng dependencies
+// installs required python3 packages not included in recon-ng REQUIREMENTS file
+// that are required by various marketplace modules.
+// Also fixes censys modules.
+// See https://github.com/lanmaster53/recon-ng/issues/149 https://github.com/censys/censys-recon-ng/issues/5
+func configureReconNGDependencies() error {
+	var notInstalled []string
+	installed, err := localio.NewPipInstalled()
+	if err != nil {
+		return err
+	}
+	deps := []string{
+		"pyaes",
+		"PyPDF3",
+		"censys",
+	}
+
+	for _, pkg := range deps {
+		if localio.Contains(installed.Name, pkg) {
+			continue
+		} else {
+			notInstalled = append(notInstalled, pkg)
+		}
+	}
+	if len(notInstalled) >= 1 {
+		packagesToInstall := strings.Join(notInstalled, " ")
+		if localio.IsRoot() {
+			cmd := fmt.Sprintf("python3 -m pip install %s", packagesToInstall)
+			if err := localio.RunCommandPipeOutput(cmd); err != nil {
+				return err
+			}
+		} else {
+			cmd := fmt.Sprintf("python3 -m pip install %s --user", packagesToInstall)
+			if err := localio.RunCommandPipeOutput(cmd); err != nil {
+				return err
+			}
+		}
+	}
+
+	// fix missing recon-ng censys modules from https://github.com/censys/censys-recon-ng
+	// Manually copy files as the install.sh script included with censys-recon-ng does some extra api key adds for censysio that we should ignore.
+	if err = localio.GitClone("https://github.com/censys/censys-recon-ng", "/tmp/censys-recon-ng"); err != nil {
+		return err
+	}
+	reconDir, err := localio.ResolveAbsPath("~/.recon-ng/modules/recon")
+	if err != nil {
+		return err
+	}
+
+	// Not pretty but it gets the job done. Perhaps an embedded bash script would look prettier, but does the same thing. meh.
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_email_address.py", fmt.Sprintf("%s/companies-contacts/censys_email_address.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_subdomains.py", fmt.Sprintf("%s/companies-domains/censys_subdomains.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-multi/censys_org.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-multi/censys_tls_subjects.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_org.py", fmt.Sprintf("%s/companies-hosts/censys_org.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_tls_subjects.py", fmt.Sprintf("%s/companies-hosts/censys_tls_subjects.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_email_to_domains.py", fmt.Sprintf("%s/contacts-domains/censys_email_to_domains.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_companies.py", fmt.Sprintf("%s/domains-companies/censys_companies.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_domain.py", fmt.Sprintf("%s/domains-hosts/censys_domain.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_query.py", fmt.Sprintf("%s/hosts-hosts/censys_query.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-hosts/censys_ip.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-hosts/censys_hostname.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_hostname.py", fmt.Sprintf("%s/hosts-ports/censys_hostname.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_ip.py", fmt.Sprintf("%s/hosts-ports/censys_ip.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_netblock_company.py", fmt.Sprintf("%s/netblocks-companies/censys_netblock_company.py", reconDir)); err != nil {
+		return err
+	}
+	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_netblock.py", fmt.Sprintf("%s/netblocks-hosts/censys_netblock.py", reconDir)); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // runModule runs a recon-ng module against the provided domain
 func runModule(workspace, module, domain string) error {
@@ -86,14 +187,22 @@ func generateReport(workspace, creator, company, output string) error {
 		switch ext {
 		case "csv":
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\"  %s -x", workspace, report, srcArg)
-			if err := localio.RunCommandPipeOutput(command); err != nil {
+			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
 		case "html":
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
-			if err := localio.RunCommandPipeOutput(command); err != nil {
+			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
+
+			if !localio.IsHeadless() {
+				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s &", htmlReport)); err != nil {
+					return err
+				}
+			}
+
 		default:
 			//Do Nothing
 		}
@@ -104,8 +213,7 @@ func generateReport(workspace, creator, company, output string) error {
 
 // RunReconNG runs all specified modules against the target domain
 func (h *Hosts) RunReconNG(opts *Options) error {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
-	gologger.Info().Str("workspace", opts.Workspace).Msg("Running Recon-ng")
+	localio.PrintInfo("workspace", opts.Workspace, "Running Recon-ng")
 
 	if err := insertCompany(opts.Workspace, opts.Company); err != nil {
 		return err
@@ -127,51 +235,106 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		return err
 	}
 
-	// install any extra modules not included in "all" ^
-	modules, err := localio.ReadLines(opts.Modules)
-	if err != nil {
-		return err
-	}
-	if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
+	// Ensure recon-ng deps and censysio modules are installed.
+	if err := configureReconNGDependencies(); err != nil {
 		return err
 	}
 
-	// run all modules against all base domains
-	for _, domain := range h.Domains {
+	rt := reflect.TypeOf(opts.Modules)
+	switch rt.Kind() {
+	case reflect.Slice:
+		modules := opts.Modules.([]string)
+		if err := installMarketPlaceModules(opts.Workspace, modules); err != nil {
+			return err
+		}
+		// Run a second time as
+		if err := configureReconNGDependencies(); err != nil {
+			return err
+		}
+
+		// run all modules against all base domains
+		for _, domain := range h.Domains {
+			for _, module := range modules {
+				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
+					if err := runModule(opts.Workspace, module, domain); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		for _, netblock := range h.CIDRs {
+			for _, module := range modules {
+				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
+					if err := runModule(opts.Workspace, module, netblock); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
 		for _, module := range modules {
-			if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
-				if err = runModule(opts.Workspace, module, domain); err != nil {
+			if strings.Contains(module, "companies") {
+				if err := runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
 					return err
 				}
 			}
 		}
-	}
 
-	for _, netblock := range h.CIDRs {
 		for _, module := range modules {
-			if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
-				if err = runModule(opts.Workspace, module, netblock); err != nil {
+			if err := runModule(opts.Workspace, module, "default"); err != nil {
+				return err
+			}
+		}
+	case reflect.String:
+		// install any extra modules not included in "all" ^
+		modules, err := localio.ReadLines(opts.Modules.(string))
+		if err != nil {
+			return err
+		}
+		if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
+			return err
+		}
+		if err := configureReconNGDependencies(); err != nil {
+			return err
+		}
+		// run all modules against all base domains
+		for _, domain := range h.Domains {
+			for _, module := range modules {
+				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
+					if err = runModule(opts.Workspace, module, domain); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		for _, netblock := range h.CIDRs {
+			for _, module := range modules {
+				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
+					if err = runModule(opts.Workspace, module, netblock); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		for _, module := range modules {
+			if strings.Contains(module, "companies") {
+				if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
 					return err
 				}
 			}
 		}
-	}
 
-	for _, module := range modules {
-		if strings.Contains(module, "companies") {
-			if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
+		for _, module := range modules {
+			if err = runModule(opts.Workspace, module, "default"); err != nil {
 				return err
 			}
 		}
 	}
 
-	for _, module := range modules {
-		if err = runModule(opts.Workspace, module, "default"); err != nil {
-			return err
-		}
-	}
-
-	if err = generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
+	if err := generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
 		return err
 	}
 

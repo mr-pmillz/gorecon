@@ -2,7 +2,6 @@ hackertarget
 recon/companies-contacts/bing_linkedin_cache
 recon/companies-multi/whois_miner
 recon/domains-contacts/whois_pocs
-recon/domains-hosts/bing_domain_api
 recon/domains-hosts/bing_domain_web
 recon/domains-hosts/brute_hosts
 recon/domains-hosts/certificate_transparency

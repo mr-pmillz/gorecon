@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"io"
@@ -18,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	. "github.com/go-git/go-git/v5/_examples"
 	"github.com/spf13/viper"
 )
 
@@ -119,7 +123,7 @@ func TimeTrack(start time.Time, name string) {
 // it returns an error
 func RunCommandPipeOutput(command string) error {
 	defer TimeTrack(time.Now(), command)
-	fmt.Printf("[+] %s\n", command)
+	PrintInfo("Command", command, "Running Command [+]")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return err
@@ -179,9 +183,17 @@ func RunCommandsPipeOutput(commands []string) error {
 	return nil
 }
 
+// PrintInfo is a wrapper around gologger Info method
+func PrintInfo(key, val, msg string) {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.Info().Str(key, val).Msg(msg)
+}
+
 // ExecCMD Execute a command
-func ExecCMD(command string) (string, error) {
-	fmt.Printf("[+] %s\n", command)
+func ExecCMD(command string, verbose bool) (string, error) {
+	if verbose {
+		fmt.Printf("[+] %s\n", command)
+	}
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return "", err
@@ -295,6 +307,7 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 		flagToUpperConfig := strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_"))
 		configVal := viper.GetString(flagToUpperConfig)
 		envVal, ok := os.LookupEnv(configVal)
+		configSliceVal := viper.GetStringSlice(flagToUpperConfig)
 		if ok {
 			if LCMOpts.IsFilePath {
 				fileExists, err := Exists(envVal)
@@ -314,13 +327,19 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 				LCMOpts.Opts = envVal
 			}
 		} else {
-			if configVal != "" {
+			if len(configSliceVal) > 1 && strings.Contains(configVal, "\n") {
+				LCMOpts.Opts = configSliceVal
+			} else if configVal != "" {
 				if LCMOpts.IsFilePath {
-					absConfigVal, err := ResolveAbsPath(configVal)
-					if err != nil {
-						return nil, err
+					if exists, err := Exists(configVal); exists && err == nil {
+						absConfigVal, err := ResolveAbsPath(configVal)
+						if err != nil {
+							return nil, err
+						}
+						LCMOpts.Opts = absConfigVal
+					} else {
+						LCMOpts.Opts = configVal
 					}
-					LCMOpts.Opts = absConfigVal
 				} else {
 					LCMOpts.Opts = configVal
 				}
@@ -370,6 +389,56 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 	}
 
 	return LCMOpts.Opts, nil
+}
+
+// IsHeadless checks the DISPLAY env var to check if
+// the server you're running this program on has a GUI / Desktop Environment
+func IsHeadless() bool {
+	return len(os.Getenv("DISPLAY")) == 0
+}
+
+// IsRoot checks if the current user is root or not
+func IsRoot() bool {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatalf("[isRoot] Unable to get current user: %s", err)
+	}
+	return currentUser.Username == "root"
+}
+
+type PipInstalled struct {
+	Name []string
+}
+
+// NewPipInstalled returns a slice of all the installed python3 pip packages
+func NewPipInstalled() (*PipInstalled, error) {
+	var pip = &PipInstalled{}
+	cmd := "python3 -m pip list | awk '{print $1}'"
+	pipPackages, err := ExecCMD(cmd, false)
+	if err != nil {
+		return nil, err
+	}
+	installedList := strings.Split(pipPackages, "\n")
+	pip.Name = append(pip.Name, installedList...)
+
+	return pip, nil
+
+}
+
+// GitClone clones a public git repo url to directory
+func GitClone(url, directory string) error {
+	if exists, err := Exists(directory); err == nil && !exists {
+		Info("git clone %s %s", url, directory)
+		_, err := git.PlainClone(directory, false, &git.CloneOptions{
+			URL:      url,
+			Progress: os.Stdout,
+		})
+		CheckIfError(err)
+	} else {
+		fmt.Printf("[+] Repo: %s already exists at %s, skipping... \n", url, directory)
+	}
+
+	return nil
 }
 
 // ReadLines reads a whole file into memory
