@@ -3,8 +3,9 @@ package recon
 import (
 	"reflect"
 
-	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/spf13/cobra"
+
+	"github.com/mr-pmillz/gorecon/localio"
 )
 
 type Options struct {

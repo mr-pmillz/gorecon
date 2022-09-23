@@ -5,10 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mr-pmillz/gorecon/cmd/recon"
-	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/mr-pmillz/gorecon/cmd/recon"
+	"github.com/mr-pmillz/gorecon/localio"
 
 	"github.com/spf13/cobra"
 )

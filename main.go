@@ -8,8 +8,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/mr-pmillz/gorecon/cmd"
 	"github.com/spf13/cobra/doc"
+
+	"github.com/mr-pmillz/gorecon/cmd"
 )
 
 func main() {

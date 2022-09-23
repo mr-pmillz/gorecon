@@ -6,6 +6,7 @@ import (
 
 	valid "github.com/asaskevich/govalidator"
 	tld "github.com/jpillora/go-tld"
+
 	"github.com/mr-pmillz/gorecon/localio"
 )
 
