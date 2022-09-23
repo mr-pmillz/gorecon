@@ -6,10 +6,14 @@ DOMAIN: |-
   todo.foo
   www.todo.foo
 MODULES: |-
-  hackertarget
   recon/companies-contacts/bing_linkedin_cache
+  recon/companies-contacts/censys_email_address
+  recon/contacts-credentials/hibp_breach
+  recon/contacts-credentials/hibp_paste
   recon/companies-multi/whois_miner
   recon/domains-contacts/whois_pocs
+  recon/domains-contacts/hunter_io
+  recon/domains-hosts/hackertarget
   recon/domains-hosts/bing_domain_web
   recon/domains-hosts/brute_hosts
   recon/domains-hosts/certificate_transparency

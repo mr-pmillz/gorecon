@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/go-git/go-git/v5 v5.4.2
+	github.com/gocarina/gocsv v0.0.0-20220914091333-ceebdd90b590
 	github.com/jpillora/go-tld v1.2.1
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/spf13/cobra v1.5.0

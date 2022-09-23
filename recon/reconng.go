@@ -174,8 +174,8 @@ func generateReport(workspace, creator, company, output string) error {
 		return err
 	}
 	reportFormats := []string{"reporting/csv", "reporting/html"}
-	now := time.Now()
-	timestamp := now.Format("01-02-2006")
+	csvReportCategories := []string{"hosts", "ports", "contacts"}
+	timestamp := time.Now().Format("01-02-2006")
 
 	if exists, err := localio.Exists(filepath.Dir(workReportDir)); err == nil && !exists {
 		if err = os.MkdirAll(filepath.Dir(workReportDir), 0750); err != nil {
@@ -184,14 +184,17 @@ func generateReport(workspace, creator, company, output string) error {
 	}
 	for _, report := range reportFormats {
 		ext := strings.Split(report, "/")[1]
-		srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
 		switch ext {
 		case "csv":
-			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\"  %s -x", workspace, report, srcArg)
-			if err = localio.RunCommandPipeOutput(command); err != nil {
-				return err
+			for _, category := range csvReportCategories {
+				srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
+				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \"  %s -x", workspace, report, category, srcArg)
+				if err = localio.RunCommandPipeOutput(cmd); err != nil {
+					return err
+				}
 			}
 		case "html":
+			srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
@@ -199,7 +202,7 @@ func generateReport(workspace, creator, company, output string) error {
 
 			if !localio.IsHeadless() {
 				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
-				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s &", htmlReport)); err != nil {
+				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s", htmlReport)); err != nil {
 					return err
 				}
 			}
