@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -18,7 +16,6 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 
 	"github.com/go-git/go-git/v5"
@@ -60,32 +57,6 @@ func Exists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
-}
-
-// DownloadFile ...
-func DownloadFile(dest, url string) error {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	bar := progressbar.DefaultBytes(
-		resp.ContentLength,
-		fmt.Sprintf("Downloading %s", filepath.Base(url)),
-	)
-	_, err = io.Copy(io.MultiWriter(f, bar), resp.Body)
-	return err
 }
 
 // CopyFile ...
@@ -210,59 +181,12 @@ func ExecCMD(command string, verbose bool) (string, error) {
 	return string(out), nil
 }
 
-// CopyStringToFile ...
-func CopyStringToFile(data, dest string) error {
-	destFile, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-	_, err = destFile.WriteString(data)
-	return err
-}
-
-// EmbedFileCopy ...
-func EmbedFileCopy(dst string, src fs.File) error {
-	destFilePath, err := ResolveAbsPath(dst)
-	if err != nil {
-		return err
-	}
-
-	if exists, err := Exists(filepath.Dir(destFilePath)); err == nil && !exists {
-		if err = os.MkdirAll(filepath.Dir(destFilePath), 0750); err != nil {
-			return err
-		}
-	}
-
-	destFile, err := os.Create(destFilePath)
-	if err != nil {
-		return err
-	}
-
-	if _, err := io.Copy(destFile, src); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func PrettyPrint(v interface{}) (err error) {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err == nil {
 		fmt.Println(string(b))
 	}
 	return
-}
-
-func FilePathWalkDir(root string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			files = append(files, path)
-		}
-		return nil
-	})
-	return files, err
 }
 
 // ResolveAbsPath ...

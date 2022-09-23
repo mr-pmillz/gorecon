@@ -224,6 +224,10 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		return err
 	}
 
+	if err := insertDomains(opts.Workspace, h.SubDomains); err != nil {
+		return err
+	}
+
 	if err := insertNetblocks(opts.Workspace, h.CIDRs); err != nil {
 		return err
 	}
