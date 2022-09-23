@@ -2,10 +2,11 @@ package recon
 
 import (
 	"fmt"
+	"reflect"
+
 	valid "github.com/asaskevich/govalidator"
 	tld "github.com/jpillora/go-tld"
 	"github.com/mr-pmilz/gorecon/localio"
-	"reflect"
 )
 
 type Hosts struct {

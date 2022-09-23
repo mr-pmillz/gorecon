@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/mr-pmilz/gorecon/cmd/recon"
 	"github.com/mr-pmilz/gorecon/localio"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )

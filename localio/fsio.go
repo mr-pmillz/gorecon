@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/gologger/levels"
-	"github.com/schollz/progressbar/v3"
-	"github.com/spf13/cobra"
 	"io"
 	"io/fs"
 	"log"
@@ -19,6 +15,11 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
+	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/cobra"
 
 	"github.com/go-git/go-git/v5"
 	. "github.com/go-git/go-git/v5/_examples"

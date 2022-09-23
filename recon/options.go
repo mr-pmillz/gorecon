@@ -1,9 +1,10 @@
 package recon
 
 import (
+	"reflect"
+
 	"github.com/mr-pmilz/gorecon/localio"
 	"github.com/spf13/cobra"
-	"reflect"
 )
 
 type Options struct {

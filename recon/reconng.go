@@ -2,12 +2,13 @@ package recon
 
 import (
 	"fmt"
-	"github.com/mr-pmilz/gorecon/localio"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/mr-pmilz/gorecon/localio"
 )
 
 // configureReconNGDependencies installs common missing recon-ng dependencies

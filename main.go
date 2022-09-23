@@ -5,10 +5,11 @@ Copyright © 2022 MrPMillz
 package main
 
 import (
-	"github.com/mr-pmilz/gorecon/cmd"
-	"github.com/spf13/cobra/doc"
 	"log"
 	"os"
+
+	"github.com/mr-pmilz/gorecon/cmd"
+	"github.com/spf13/cobra/doc"
 )
 
 func main() {
