@@ -2,7 +2,7 @@ package recon
 
 import (
 	"fmt"
-	"gorecon/localio"
+	"github.com/mr-pmilz/gorecon/localio"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// configureReconNGDependencies installs any missing recon-ng dependencies
+// configureReconNGDependencies installs common missing recon-ng dependencies
 // installs required python3 packages not included in recon-ng REQUIREMENTS file
 // that are required by various marketplace modules.
 // Also fixes censys modules.

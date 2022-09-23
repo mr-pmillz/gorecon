@@ -4,7 +4,7 @@ import (
 	"fmt"
 	valid "github.com/asaskevich/govalidator"
 	tld "github.com/jpillora/go-tld"
-	"gorecon/localio"
+	"github.com/mr-pmilz/gorecon/localio"
 	"reflect"
 )
 

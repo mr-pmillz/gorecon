@@ -1,7 +1,7 @@
 package recon
 
 import (
-	"gorecon/localio"
+	"github.com/mr-pmilz/gorecon/localio"
 )
 
 func (h *Hosts) RunAllRecon(opts *Options) error {

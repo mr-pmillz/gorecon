@@ -1,8 +1,8 @@
 package recon
 
 import (
+	"github.com/mr-pmilz/gorecon/localio"
 	"github.com/spf13/cobra"
-	"gorecon/localio"
 	"reflect"
 )
 

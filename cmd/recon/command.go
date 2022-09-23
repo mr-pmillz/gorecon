@@ -2,8 +2,8 @@ package recon
 
 import (
 	"fmt"
+	"github.com/mr-pmilz/gorecon/recon"
 	"github.com/spf13/cobra"
-	"gorecon/recon"
 )
 
 type reconOptions = recon.Options
