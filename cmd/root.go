@@ -22,8 +22,8 @@ const (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "gorecon",
-	Short: "A brief description of your application",
-	Long:  `External recon automation tool`,
+	Short: "External recon automation tool",
+	Long:  `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon! TODO`,
 }
 
 func init() {
