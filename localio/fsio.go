@@ -74,7 +74,7 @@ func DownloadFile(dest, url string) error {
 	}
 	defer resp.Body.Close()
 
-	f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -413,7 +413,7 @@ type PipInstalled struct {
 
 // NewPipInstalled returns a slice of all the installed python3 pip packages
 func NewPipInstalled() (*PipInstalled, error) {
-	var pip = &PipInstalled{}
+	pip := &PipInstalled{}
 	cmd := "python3 -m pip list | awk '{print $1}'"
 	pipPackages, err := ExecCMD(cmd, false)
 	if err != nil {
@@ -423,7 +423,6 @@ func NewPipInstalled() (*PipInstalled, error) {
 	pip.Name = append(pip.Name, installedList...)
 
 	return pip, nil
-
 }
 
 // GitClone clones a public git repo url to directory

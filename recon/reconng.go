@@ -205,7 +205,7 @@ func generateReport(workspace, creator, company, output string) error {
 			}
 
 		default:
-			//Do Nothing
+			// Do Nothing
 		}
 	}
 

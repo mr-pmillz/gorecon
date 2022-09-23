@@ -20,13 +20,13 @@ type Hosts struct {
 func NewScope(opts *Options) (*Hosts, error) {
 	fmt.Println("[+] Generating Scope Information")
 	hosts := new(Hosts)
-	//check if domain arg is file, string, or a slice
+	// check if domain arg is file, string, or a slice
 	rtd := reflect.TypeOf(opts.Domain)
 	switch rtd.Kind() {
 	case reflect.Slice:
 		for _, domain := range opts.Domain.([]string) {
-			//check if CIDR, IPv4, IPv6, Subdomain, or primary domain
-			//this tld library expects http:// protocol | URL format so prepend it to domain
+			// check if CIDR, IPv4, IPv6, Subdomain, or primary domain
+			// this tld library expects http:// protocol | URL format so prepend it to domain
 			d, _ := tld.Parse(fmt.Sprintf("https://%s", domain))
 			if d.Subdomain != "" {
 				hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
@@ -43,8 +43,8 @@ func NewScope(opts *Options) (*Hosts, error) {
 
 			// parse --domain file or string into scope object
 			for _, domain := range domainList {
-				//check if CIDR, IPv4, IPv6, Subdomain, or primary domain
-				//this tld library expects http:// protocol | URL format so prepend it to domain
+				// check if CIDR, IPv4, IPv6, Subdomain, or primary domain
+				// this tld library expects http:// protocol | URL format so prepend it to domain
 				d, _ := tld.Parse(fmt.Sprintf("https://%s", domain))
 				if d.Subdomain != "" {
 					hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))

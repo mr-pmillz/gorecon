@@ -37,7 +37,7 @@ linters:
     #- rowserrcheck
     #- scopelint
     - staticcheck
-    - structcheck
+    #- structcheck
     #- stylecheck
     - typecheck
     - unconvert

@@ -19,7 +19,6 @@ type Options struct {
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
-
 	cmd.PersistentFlags().StringP("company", "c", "", "company name that your testing")
 	cmd.PersistentFlags().StringP("creator", "", "BHIS", "report creator")
 	cmd.PersistentFlags().StringP("domain", "d", "", "domain string or file containing domains ex. domains.txt")
