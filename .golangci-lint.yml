@@ -5,14 +5,14 @@ linters:
   disable-all: true
   enable:
     #- bodyclose
-    - deadcode
+    #- deadcode
     #- depguard
     #- dogsled
     #- dupl
     - errcheck
     #- exhaustive
     #- funlen
-    - gas
+    #- gas
     #- gochecknoinits
     - goconst
     #- gocritic
@@ -43,7 +43,7 @@ linters:
     - unconvert
     #- unparam
     - unused
-    - varcheck
+    #- varcheck
     #- whitespace
   fast: false
 

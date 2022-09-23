@@ -3,7 +3,7 @@ package recon
 import (
 	"fmt"
 
-	"github.com/mr-pmilz/gorecon/recon"
+	"github.com/mr-pmillz/gorecon/recon"
 	"github.com/spf13/cobra"
 )
 

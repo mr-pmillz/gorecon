@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mr-pmilz/gorecon/cmd"
+	"github.com/mr-pmillz/gorecon/cmd"
 	"github.com/spf13/cobra/doc"
 )
 
