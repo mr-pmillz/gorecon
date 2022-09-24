@@ -269,32 +269,27 @@ func generateReport(workspace, creator, company, output string) (*CsvReportFiles
 				}
 			}
 		case "list":
-			for _, category := range csvReportCategories {
-				switch category {
-				case "hosts":
-					hostIps := fmt.Sprintf("%s/recon-ng-%s-%s-ip-addresses-%s.txt", workReportDir, company, category, timestamp)
-					hostDomains := fmt.Sprintf("%s/recon-ng-%s-%s-hosts-%s.txt", workReportDir, company, category, timestamp)
-					portsIps := fmt.Sprintf("%s/recon-ng-%s-ports-ips-%s.txt", workReportDir, company, timestamp)
-					portsHost := fmt.Sprintf("%s/recon-ng-%s-ports-hosts-ip-%s.txt", workReportDir, company, timestamp)
-					portsPort := fmt.Sprintf("%s/recon-ng-%s-ports-ports-%s.txt", workReportDir, company, timestamp)
-					contactsEmails := fmt.Sprintf("%s/recon-ng-%s-emails-%s.txt", workReportDir, company, timestamp)
-					hostIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = ip_address\" -x", workspace, report, hostIps)
-					hostDomainsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = host\" -x", workspace, report, hostDomains)
-					portsIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = ip_address\" -x", workspace, report, portsIps)
-					portsHostsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = host\" -x", workspace, report, portsHost)
-					portsPortsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = port\" -x", workspace, report, portsPort)
-					contactsEmailsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = contacts\" -o \"COLUMN = email\" -x", workspace, report, contactsEmails)
-					if err = localio.RunCommandsPipeOutput([]string{
-						hostIPsCMD,
-						hostDomainsCMD,
-						portsIPsCMD,
-						portsHostsCMD,
-						portsPortsCMD,
-						contactsEmailsCMD,
-					}); err != nil {
-						return nil, err
-					}
-				}
+			hostIps := fmt.Sprintf("%s/recon-ng-%s-hosts-ip-addresses-%s.txt", workReportDir, company, timestamp)
+			hostDomains := fmt.Sprintf("%s/recon-ng-%s-hosts-hosts-%s.txt", workReportDir, company, timestamp)
+			portsIps := fmt.Sprintf("%s/recon-ng-%s-ports-ips-%s.txt", workReportDir, company, timestamp)
+			portsHost := fmt.Sprintf("%s/recon-ng-%s-ports-hosts-ip-%s.txt", workReportDir, company, timestamp)
+			portsPort := fmt.Sprintf("%s/recon-ng-%s-ports-ports-%s.txt", workReportDir, company, timestamp)
+			contactsEmails := fmt.Sprintf("%s/recon-ng-%s-emails-%s.txt", workReportDir, company, timestamp)
+			hostIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = ip_address\" -x", workspace, report, hostIps)
+			hostDomainsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = host\" -x", workspace, report, hostDomains)
+			portsIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = ip_address\" -x", workspace, report, portsIps)
+			portsHostsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = host\" -x", workspace, report, portsHost)
+			portsPortsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = port\" -x", workspace, report, portsPort)
+			contactsEmailsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = contacts\" -o \"COLUMN = email\" -x", workspace, report, contactsEmails)
+			if err = localio.RunCommandsPipeOutput([]string{
+				hostIPsCMD,
+				hostDomainsCMD,
+				portsIPsCMD,
+				portsHostsCMD,
+				portsPortsCMD,
+				contactsEmailsCMD,
+			}); err != nil {
+				return nil, err
 			}
 		default:
 			// Do Nothing
