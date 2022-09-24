@@ -8,8 +8,10 @@ dist/
 dist
 *.log
 config.yaml
+config.yml
 config/config.yaml
 config/*.yaml
+config/*.yml
 coverage/*
 todo.txt
 gorecon

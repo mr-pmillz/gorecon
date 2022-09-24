@@ -37,9 +37,10 @@ go install github.com/mr-pmillz/gorecon@latest
 ```
 
 create your [config.yaml](config/config.yaml.dist) file
+ensure netblock ips are in IPv4 CIDR range formats. For a single ip, you would use 10.10.10.111/32
 
 ```shell
-cp config/config.yaml.dist config/config.yaml
+cp config/config.yaml.dist config.yaml
 ```
 
 ## Usage
@@ -68,7 +69,7 @@ Run gorecon from a yaml configuration file.
 See [config.yaml](config/config.yaml.dist)
 
 ```shell
-./gorecon recon --config config/config.yaml
+./gorecon recon --config config.yaml
 ```
 
 - Run gorecon with cli args
