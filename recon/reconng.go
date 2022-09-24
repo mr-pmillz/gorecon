@@ -218,18 +218,20 @@ func insertNetblocks(workspace string, netblocks []string) error {
 }
 
 // generateReport creates html and csv report files
-func generateReport(workspace, creator, company, output string) error {
+//nolint:gocognit
+func generateReport(workspace, creator, company, output string) (*CsvReportFiles, error) {
 	workReportDir, err := localio.ResolveAbsPath(output)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	reportFormats := []string{"reporting/csv", "reporting/html"}
+	reportFormats := []string{"reporting/csv", "reporting/html", "reporting/list"}
 	csvReportCategories := []string{"hosts", "ports", "contacts", "credentials"}
 	timestamp := time.Now().Format("01-02-2006")
+	csvReportFiles := &CsvReportFiles{}
 
 	if exists, err := localio.Exists(filepath.Dir(workReportDir)); err == nil && !exists {
 		if err = os.MkdirAll(filepath.Dir(workReportDir), 0750); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, report := range reportFormats {
@@ -238,32 +240,70 @@ func generateReport(workspace, creator, company, output string) error {
 		case "csv":
 			for _, category := range csvReportCategories {
 				reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
+				switch category {
+				case "hosts":
+					csvReportFiles.hosts = reportFilePath
+				case "ports":
+					csvReportFiles.ports = reportFilePath
+				case "contacts":
+					csvReportFiles.contacts = reportFilePath
+				default:
+					// Do Nothing
+				}
 				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \" -o \"FILENAME=%s\" -x", workspace, report, category, reportFilePath)
 				if err = localio.RunCommandPipeOutput(cmd); err != nil {
-					return err
+					return nil, err
 				}
 			}
 		case "html":
 			reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" -o \"FILENAME=%s\" -x", workspace, report, creator, company, reportFilePath)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
-				return err
+				return nil, err
 			}
 
 			if !localio.IsHeadless() {
 				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
 				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s", htmlReport)); err != nil {
-					return err
+					return nil, err
+				}
+			}
+		case "list":
+			for _, category := range csvReportCategories {
+				switch category {
+				case "hosts":
+					hostIps := fmt.Sprintf("%s/recon-ng-%s-%s-ip-addresses-%s.txt", workReportDir, company, category, timestamp)
+					hostDomains := fmt.Sprintf("%s/recon-ng-%s-%s-hosts-%s.txt", workReportDir, company, category, timestamp)
+					portsIps := fmt.Sprintf("%s/recon-ng-%s-ports-ips-%s.txt", workReportDir, company, timestamp)
+					portsHost := fmt.Sprintf("%s/recon-ng-%s-ports-hosts-ip-%s.txt", workReportDir, company, timestamp)
+					portsPort := fmt.Sprintf("%s/recon-ng-%s-ports-ports-%s.txt", workReportDir, company, timestamp)
+					contactsEmails := fmt.Sprintf("%s/recon-ng-%s-emails-%s.txt", workReportDir, company, timestamp)
+					hostIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = ip_address\" -x", workspace, report, hostIps)
+					hostDomainsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = host\" -x", workspace, report, hostDomains)
+					portsIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = ip_address\" -x", workspace, report, portsIps)
+					portsHostsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = host\" -x", workspace, report, portsHost)
+					portsPortsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = port\" -x", workspace, report, portsPort)
+					contactsEmailsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = contacts\" -o \"COLUMN = email\" -x", workspace, report, contactsEmails)
+					if err = localio.RunCommandsPipeOutput([]string{
+						hostIPsCMD,
+						hostDomainsCMD,
+						portsIPsCMD,
+						portsHostsCMD,
+						portsPortsCMD,
+						contactsEmailsCMD,
+					}); err != nil {
+						return nil, err
+					}
 				}
 			}
 		default:
 			// Do Nothing
 		}
 	}
-	return nil
+	return csvReportFiles, nil
 }
 
-// setupWorkspace configures the recon-ng workspace and installs all modules
+// setupWorkspace configures the recon-ng workspace and installs all modules.
 func setupWorkspace(workspace, company string, domains, subs, netblocks []string) error {
 	if err := insertCompany(workspace, company); err != nil {
 		return err
@@ -296,10 +336,10 @@ func setupWorkspace(workspace, company string, domains, subs, netblocks []string
 }
 
 // RunReconNG runs all specified modules against the target domain
-func (h *Hosts) RunReconNG(opts *Options) error {
+func (h *Hosts) RunReconNG(opts *Options) (*CsvReportFiles, error) {
 	localio.PrintInfo("workspace", opts.Workspace, "Running Recon-ng")
 	if err := setupWorkspace(opts.Workspace, opts.Company, h.Domains, h.SubDomains, h.CIDRs); err != nil {
-		return err
+		return nil, err
 	}
 
 	rt := reflect.TypeOf(opts.Modules)
@@ -308,38 +348,39 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		modules := opts.Modules.([]string)
 
 		if err := runModulesDefault(opts.Workspace, modules); err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := runContactsModules(opts.Workspace); err != nil {
-			return err
+			return nil, err
 		}
 		// run default modules a second time to ensure nothing was missed
 		if err := runModulesDefault(opts.Workspace, modules); err != nil {
-			return err
+			return nil, err
 		}
 	case reflect.String:
 		modules, err := localio.ReadLines(opts.Modules.(string))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		if err := runModulesDefault(opts.Workspace, modules); err != nil {
-			return err
+		if err = runModulesDefault(opts.Workspace, modules); err != nil {
+			return nil, err
 		}
 
-		if err := runContactsModules(opts.Workspace); err != nil {
-			return err
+		if err = runContactsModules(opts.Workspace); err != nil {
+			return nil, err
 		}
 		// run default modules a second time to ensure nothing was missed
-		if err := runModulesDefault(opts.Workspace, modules); err != nil {
-			return err
+		if err = runModulesDefault(opts.Workspace, modules); err != nil {
+			return nil, err
 		}
 	}
 
-	if err := generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output); err != nil {
-		return err
+	csvReports, err := generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return csvReports, nil
 }

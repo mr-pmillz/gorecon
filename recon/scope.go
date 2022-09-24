@@ -56,7 +56,9 @@ func NewScope(opts *Options) (*Hosts, error) {
 				// this tld library expects http:// protocol | URL format so prepend it to domain
 				d, _ := tld.Parse(fmt.Sprintf("https://%s", domain))
 				if d.Subdomain != "" {
-					hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
+					if !localio.Contains(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+						hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
+					}
 				}
 				if d.Domain != "" {
 					if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
@@ -65,7 +67,7 @@ func NewScope(opts *Options) (*Hosts, error) {
 				}
 			}
 		} else {
-			d, _ := tld.Parse(fmt.Sprintf("https://%s", opts.Domain))
+			d, _ := tld.Parse(fmt.Sprintf("https://%s", opts.Domain.(string)))
 			if d.Subdomain != "" {
 				hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
 				if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
@@ -128,10 +130,12 @@ func NewScope(opts *Options) (*Hosts, error) {
 
 // recon-ng csv parser section
 
-type NGAllCSV struct {
-	Ports    NGPortsCSV
-	Hosts    NGHostsCSV
-	Contacts NGContactsCSV
+type NGScope struct {
+	URLs          []string
+	URLsWithPorts []string
+	Hosts         []NGHostsCSV
+	Contacts      []NGContactsCSV
+	Ports         []NGPortsCSV
 }
 
 type NGPortsCSV struct {
@@ -168,24 +172,101 @@ type NGHostsCSV struct {
 	Module  string `csv:"module"`
 }
 
-func ParseReconNGCSV(csvFile string) (*Hosts, error) {
-	var r []*NGHostsCSV
-	fh, err := os.OpenFile(csvFile, os.O_RDWR|os.O_CREATE, os.ModePerm)
+type CsvReportFiles struct {
+	hosts    string
+	ports    string
+	contacts string
+}
+
+func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) {
+	scope := NGScope{}
+	ports, err := os.OpenFile(csvFiles.ports, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
-	defer fh.Close()
+	defer ports.Close()
+
+	var p []*NGPortsCSV
 
 	gocsv.SetCSVReader(gocsv.LazyCSVReader)
 
-	if err := gocsv.UnmarshalFile(fh, &r); err != nil {
+	if err := gocsv.UnmarshalFile(ports, &p); err != nil {
 		return nil, err
 	}
 
-	if _, err := fh.Seek(0, 0); err != nil {
+	if _, err := ports.Seek(0, 0); err != nil {
 		return nil, err
 	}
 
-	// TODO
-	return nil, nil
+	for _, i := range p {
+		scope.Ports = append(scope.Ports, NGPortsCSV{
+			IP:       i.IP,
+			Host:     i.Host,
+			Port:     i.Port,
+			Protocol: i.Protocol,
+			Banner:   i.Banner,
+			Notes:    i.Notes,
+			Module:   i.Module,
+		})
+	}
+
+	reportHosts, err := os.OpenFile(csvFiles.hosts, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	defer reportHosts.Close()
+
+	var h []*NGHostsCSV
+
+	if err := gocsv.UnmarshalFile(reportHosts, &h); err != nil {
+		return nil, err
+	}
+
+	if _, err := reportHosts.Seek(0, 0); err != nil {
+		return nil, err
+	}
+	for _, i := range h {
+		scope.Hosts = append(scope.Hosts, NGHostsCSV{
+			Host:    i.Host,
+			IP:      i.IP,
+			Region:  i.Region,
+			Country: i.Country,
+			Lat:     i.Lat,
+			Long:    i.Long,
+			Notes:   i.Notes,
+			Module:  i.Module,
+		})
+	}
+
+	contacts, err := os.OpenFile(csvFiles.contacts, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	defer contacts.Close()
+
+	var c []*NGContactsCSV
+
+	if err := gocsv.UnmarshalFile(contacts, &c); err != nil {
+		return nil, err
+	}
+
+	if _, err := contacts.Seek(0, 0); err != nil {
+		return nil, err
+	}
+	for _, i := range c {
+		scope.Contacts = append(scope.Contacts, NGContactsCSV{
+			FirstName:  i.FirstName,
+			MiddleName: i.MiddleName,
+			LastName:   i.LastName,
+			Email:      i.Email,
+			Title:      i.Title,
+			Region:     i.Region,
+			Country:    i.Country,
+			Phone:      i.Phone,
+			Notes:      i.Notes,
+			Module:     i.Module,
+		})
+	}
+
+	return &scope, nil
 }

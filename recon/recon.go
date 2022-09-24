@@ -9,9 +9,20 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err := localio.PrettyPrint(h); err != nil {
 		return err
 	}
-	if err := h.RunReconNG(opts); err != nil {
+	reports, err := h.RunReconNG(opts)
+	if err != nil {
 		return err
 	}
+
+	reconNGScope, err := ParseReconNGCSV(&CsvReportFiles{
+		hosts:    reports.hosts,
+		ports:    reports.ports,
+		contacts: reports.contacts,
+	})
+	if err != nil {
+		return err
+	}
+	_ = reconNGScope
 
 	return nil
 }
