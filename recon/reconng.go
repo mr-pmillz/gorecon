@@ -138,7 +138,8 @@ func runModulesDefault(workspace string, modules []string) error {
 		"recon/contacts-credentials/hibp_paste",
 		"recon/contacts-profiles/fullcontact",
 		"recon/domains-contacts/hunter_io",
-		"reporting",
+		"reporting/csv",
+		"reporting/html",
 	}
 	for _, module := range modules {
 		if !localio.Contains(ignoreModules, module) {
@@ -154,7 +155,7 @@ func runModulesDefault(workspace string, modules []string) error {
 func runContactsModules(workspace string) error {
 	// first run hunterio to gather emails and populate the contacts db.
 	hunterIO := "recon/domains-contacts/hunter_io"
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=default -o count=1000 -x", workspace, hunterIO)); err != nil {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=default -o count=100 -x", workspace, hunterIO)); err != nil {
 		return err
 	}
 	contactModules := []string{
@@ -237,14 +238,14 @@ func generateReport(workspace, creator, company, output string) error {
 		case "csv":
 			for _, category := range csvReportCategories {
 				reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
-				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \" -o FILENAME=%s -x", workspace, report, category, reportFilePath)
+				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \" -o \"FILENAME=%s\" -x", workspace, report, category, reportFilePath)
 				if err = localio.RunCommandPipeOutput(cmd); err != nil {
 					return err
 				}
 			}
 		case "html":
-			reportFilePath := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
-			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" -o FILENAME=%s -x", workspace, report, creator, company, reportFilePath)
+			reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" -o \"FILENAME=%s\" -x", workspace, report, creator, company, reportFilePath)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
@@ -313,6 +314,10 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		if err := runContactsModules(opts.Workspace); err != nil {
 			return err
 		}
+		// run default modules a second time to ensure nothing was missed
+		if err := runModulesDefault(opts.Workspace, modules); err != nil {
+			return err
+		}
 	case reflect.String:
 		modules, err := localio.ReadLines(opts.Modules.(string))
 		if err != nil {
@@ -324,6 +329,10 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		}
 
 		if err := runContactsModules(opts.Workspace); err != nil {
+			return err
+		}
+		// run default modules a second time to ensure nothing was missed
+		if err := runModulesDefault(opts.Workspace, modules); err != nil {
 			return err
 		}
 	}
