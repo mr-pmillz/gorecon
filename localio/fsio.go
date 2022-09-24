@@ -19,18 +19,18 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/go-git/go-git/v5"
-	. "github.com/go-git/go-git/v5/_examples"
+	gogitex "github.com/go-git/go-git/v5/_examples"
 	"github.com/spf13/viper"
 )
 
 // CommandExists ...
-func CommandExists(cmd string) (string, bool) {
-	cmdPath, err := exec.LookPath(cmd)
-	if err != nil {
-		return "", false
-	}
-	return cmdPath, true
-}
+// func CommandExists(cmd string) (string, bool) {
+//	cmdPath, err := exec.LookPath(cmd)
+//	if err != nil {
+//		return "", false
+//	}
+//	return cmdPath, true
+//}
 
 // Contains checks if a string is present in a slice
 func Contains(s []string, str string) bool {
@@ -221,20 +221,21 @@ type LoadFromCommandOpts struct {
 
 // ConfigureFlagOpts sets the cobra flag option to the LoadFromCommandOpts.Opts key
 // it returns the parsed value of the cobra flag from LoadFromCommandOpts.Flag
-func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interface{}, error) {
-	cmdFlag, err := cmd.Flags().GetString(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag))
+//nolint:gocognit
+func ConfigureFlagOpts(cmd *cobra.Command, lfcOpts *LoadFromCommandOpts) (interface{}, error) {
+	cmdFlag, err := cmd.Flags().GetString(fmt.Sprintf("%s%s", lfcOpts.Prefix, lfcOpts.Flag))
 	if err != nil {
 		return nil, err
 	}
 
 	switch cmdFlag {
 	case "":
-		flagToUpperConfig := strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_"))
+		flagToUpperConfig := strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", lfcOpts.Prefix, lfcOpts.Flag), "-", "_"))
 		configVal := viper.GetString(flagToUpperConfig)
 		envVal, ok := os.LookupEnv(configVal)
 		configSliceVal := viper.GetStringSlice(flagToUpperConfig)
 		if ok {
-			if LCMOpts.IsFilePath {
+			if lfcOpts.IsFilePath {
 				fileExists, err := Exists(envVal)
 				if err != nil {
 					return nil, err
@@ -244,55 +245,57 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 					if err != nil {
 						return nil, err
 					}
-					LCMOpts.Opts = absVal
+					lfcOpts.Opts = absVal
 				} else {
-					LCMOpts.Opts = envVal
+					lfcOpts.Opts = envVal
 				}
 			} else {
-				LCMOpts.Opts = envVal
+				lfcOpts.Opts = envVal
 			}
 		} else {
-			if len(configSliceVal) > 1 && strings.Contains(configVal, "\n") {
-				LCMOpts.Opts = configSliceVal
-			} else if configVal != "" {
-				if LCMOpts.IsFilePath {
+			switch {
+			case len(configSliceVal) > 1 && strings.Contains(configVal, "\n"):
+				lfcOpts.Opts = configSliceVal
+			case configVal != "":
+				if lfcOpts.IsFilePath {
 					if exists, err := Exists(configVal); exists && err == nil {
 						absConfigVal, err := ResolveAbsPath(configVal)
 						if err != nil {
 							return nil, err
 						}
-						LCMOpts.Opts = absConfigVal
+						lfcOpts.Opts = absConfigVal
 					} else {
-						LCMOpts.Opts = configVal
+						lfcOpts.Opts = configVal
 					}
 				} else {
-					LCMOpts.Opts = configVal
+					lfcOpts.Opts = configVal
 				}
-			} else {
-				if LCMOpts.DefaultFlagVal != "" && LCMOpts.IsFilePath {
-					absDefaultVal, err := ResolveAbsPath(LCMOpts.DefaultFlagVal)
+			default:
+				switch {
+				case lfcOpts.DefaultFlagVal != "" && lfcOpts.IsFilePath:
+					absDefaultVal, err := ResolveAbsPath(lfcOpts.DefaultFlagVal)
 					if err != nil {
 						return nil, err
 					}
 					_, err = os.Stat(absDefaultVal)
 					if os.IsNotExist(err) {
-						LCMOpts.Opts = cmdFlag
+						lfcOpts.Opts = cmdFlag
 					} else {
-						LCMOpts.Opts = absDefaultVal
+						lfcOpts.Opts = absDefaultVal
 					}
-				} else if LCMOpts.DefaultFlagVal != "" && !LCMOpts.IsFilePath {
-					LCMOpts.Opts = LCMOpts.DefaultFlagVal
-				} else {
-					LCMOpts.Opts = cmdFlag
+				case lfcOpts.DefaultFlagVal != "" && !lfcOpts.IsFilePath:
+					lfcOpts.Opts = lfcOpts.DefaultFlagVal
+				default:
+					lfcOpts.Opts = cmdFlag
 				}
 			}
 		}
 	default:
-		envValue, ok := os.LookupEnv(strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", LCMOpts.Prefix, LCMOpts.Flag), "-", "_")))
+		envValue, ok := os.LookupEnv(strings.ToUpper(strings.ReplaceAll(fmt.Sprintf("%s%s", lfcOpts.Prefix, lfcOpts.Flag), "-", "_")))
 		if ok {
-			LCMOpts.Opts = envValue
+			lfcOpts.Opts = envValue
 		} else {
-			if LCMOpts.IsFilePath {
+			if lfcOpts.IsFilePath {
 				fileExists, err := Exists(cmdFlag)
 				if err != nil {
 					return nil, err
@@ -302,18 +305,16 @@ func ConfigureFlagOpts(cmd *cobra.Command, LCMOpts *LoadFromCommandOpts) (interf
 					if err != nil {
 						return nil, err
 					}
-					LCMOpts.Opts = absCmdFlag
+					lfcOpts.Opts = absCmdFlag
 				} else {
-					LCMOpts.Opts = cmdFlag
+					lfcOpts.Opts = cmdFlag
 				}
-
 			} else {
-				LCMOpts.Opts = cmdFlag
+				lfcOpts.Opts = cmdFlag
 			}
 		}
 	}
-
-	return LCMOpts.Opts, nil
+	return lfcOpts.Opts, nil
 }
 
 // IsHeadless checks the DISPLAY env var to check if
@@ -352,12 +353,12 @@ func NewPipInstalled() (*PipInstalled, error) {
 // GitClone clones a public git repo url to directory
 func GitClone(url, directory string) error {
 	if exists, err := Exists(directory); err == nil && !exists {
-		Info("git clone %s %s", url, directory)
+		gogitex.Info("git clone %s %s", url, directory)
 		_, err := git.PlainClone(directory, false, &git.CloneOptions{
 			URL:      url,
 			Progress: os.Stdout,
 		})
-		CheckIfError(err)
+		gogitex.CheckIfError(err)
 	} else {
 		fmt.Printf("[+] Repo: %s already exists at %s, skipping... \n", url, directory)
 	}
@@ -383,16 +384,16 @@ func ReadLines(path string) ([]string, error) {
 }
 
 // WriteLines writes the lines to the given file.
-func WriteLines(lines []string, path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	w := bufio.NewWriter(file)
-	for _, line := range lines {
-		fmt.Fprintln(w, line)
-	}
-	return w.Flush()
-}
+// func WriteLines(lines []string, path string) error {
+//	file, err := os.Create(path)
+//	if err != nil {
+//		return err
+//	}
+//	defer file.Close()
+//
+//	w := bufio.NewWriter(file)
+//	for _, line := range lines {
+//		fmt.Fprintln(w, line)
+//	}
+//	return w.Flush()
+//}

@@ -1,7 +1,7 @@
 package recon
 
 import (
-	"fmt"
+	"github.com/projectdiscovery/gologger"
 
 	"github.com/spf13/cobra"
 
@@ -36,18 +36,16 @@ var Command = &cobra.Command{
 		var err error
 		opts := Options{}
 		if err = opts.LoadFromCommand(cmd); err != nil {
-			panic(err)
+			gologger.Fatal().Msgf("Could not LoadFromCommand %s\n", err)
 		}
 
 		hostScope, err := recon.NewScope(&opts.reconOptions)
 		if err != nil {
-			fmt.Println(err.Error())
-			panic(err)
+			gologger.Fatal().Msgf("Could not create NetScope %s\n", err)
 		}
 
 		if err = hostScope.RunAllRecon(&opts.reconOptions); err != nil {
-			fmt.Println(err.Error())
-			panic(err)
+			gologger.Fatal().Msgf("Could not RunAllRecon %s\n", err)
 		}
 	},
 }

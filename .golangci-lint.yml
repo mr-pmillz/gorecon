@@ -4,24 +4,26 @@ run:
 linters:
   disable-all: true
   enable:
-    #- bodyclose
+    - bodyclose
     #- deadcode
     #- depguard
     #- dogsled
-    #- dupl
-    - errcheck
+    - dupl
+    - errorlint
+    - exportloopref
     #- exhaustive
     #- funlen
     #- gas
     #- gochecknoinits
     - goconst
-    #- gocritic
-    #- gocyclo
+    - gocognit
+    - gocritic
+    - gocyclo
     #- gofmt
-    - goimports
+    #- goimports
     #- golint
     #- gomnd
-    #- goprintffuncname
+    - goprintffuncname
     - gosec
     - gosimple
     - govet
@@ -34,17 +36,19 @@ linters:
     #- nakedret
     #- noctx
     #- nolintlint
+    - prealloc
+    - revive
     #- rowserrcheck
     #- scopelint
     - staticcheck
     #- structcheck
-    #- stylecheck
+    - stylecheck
     - typecheck
     - unconvert
     #- unparam
     - unused
     #- varcheck
-    #- whitespace
+    - whitespace
   fast: false
 
 linters-settings:

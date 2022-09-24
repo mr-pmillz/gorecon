@@ -41,7 +41,7 @@ func initConfig() {
 		// Use config file from the flag.
 		absConfigFilePath, err := localio.ResolveAbsPath(cfgFile)
 		if err != nil {
-			_ = fmt.Errorf("Couldn't resolve path of config file: %v\n", err)
+			_ = fmt.Errorf("couldn't resolve path of config file: %w", err)
 			return
 		}
 		viper.SetConfigFile(absConfigFilePath)

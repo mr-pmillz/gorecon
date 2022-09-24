@@ -2,10 +2,10 @@ package recon
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
-	"io"
 	"os"
 	"reflect"
+
+	"github.com/mr-pmillz/gorecon/localio"
 
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gocarina/gocsv"
@@ -20,6 +20,9 @@ type Hosts struct {
 	IPv6s      []string
 }
 
+//nolint:gocognit
+//nolint:gocyclo
+//nolint:gocyclo
 func NewScope(opts *Options) (*Hosts, error) {
 	fmt.Println("[+] Generating Scope Information")
 	hosts := new(Hosts)
@@ -175,9 +178,7 @@ func ParseReconNGCSV(csvFile string) (*Hosts, error) {
 	}
 	defer fh.Close()
 
-	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
-		return gocsv.LazyCSVReader(in) // Allows use of quotes in CSV
-	})
+	gocsv.SetCSVReader(gocsv.LazyCSVReader)
 
 	if err := gocsv.UnmarshalFile(fh, &r); err != nil {
 		return nil, err
@@ -187,6 +188,6 @@ func ParseReconNGCSV(csvFile string) (*Hosts, error) {
 		return nil, err
 	}
 
-	//TODO
+	// TODO
 	return nil, nil
 }

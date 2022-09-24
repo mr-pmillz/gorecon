@@ -15,7 +15,6 @@ import (
 // installs required python3 packages not included in recon-ng REQUIREMENTS file
 // that are required by various marketplace modules.
 // Also fixes censys modules.
-// See https://github.com/lanmaster53/recon-ng/issues/149 https://github.com/censys/censys-recon-ng/issues/5
 func configureReconNGDependencies() error {
 	var notInstalled []string
 	installed, err := localio.NewPipInstalled()
@@ -50,16 +49,25 @@ func configureReconNGDependencies() error {
 		}
 	}
 
+	if err = copyCensysScripts(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// copyCensysScripts fixes issue with censys python3 scripts
+// See https://github.com/lanmaster53/recon-ng/issues/149 https://github.com/censys/censys-recon-ng/issues/5
+func copyCensysScripts() error {
 	// fix missing recon-ng censys modules from https://github.com/censys/censys-recon-ng
-	// Manually copy files as the install.sh script included with censys-recon-ng does some extra api key adds for censysio that we should ignore.
-	if err = localio.GitClone("https://github.com/censys/censys-recon-ng", "/tmp/censys-recon-ng"); err != nil {
+	// Manually copy files as the install.sh script included with censys-recon-ng repo does some extra api key adds for censysio that we should ignore.
+	if err := localio.GitClone("https://github.com/censys/censys-recon-ng", "/tmp/censys-recon-ng"); err != nil {
 		return err
 	}
 	reconDir, err := localio.ResolveAbsPath("~/.recon-ng/modules/recon")
 	if err != nil {
 		return err
 	}
-
 	// Not pretty but it gets the job done. Perhaps an embedded bash script would look prettier, but does the same thing. meh.
 	if err = localio.CopyFile("/tmp/censys-recon-ng/censys_email_address.py", fmt.Sprintf("%s/companies-contacts/censys_email_address.py", reconDir)); err != nil {
 		return err
@@ -114,16 +122,54 @@ func configureReconNGDependencies() error {
 }
 
 // runModule runs a recon-ng module against the provided domain
-func runModule(workspace, module, domain string) error {
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, domain)); err != nil {
+func runModule(workspace, module, source string) error {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, source)); err != nil {
 		return err
 	}
 	return nil
 }
 
-// runCompanyModule runs a recon-ng module against the provided domain
-func runCompanyModule(workspace, module, company string) error {
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=%s -x", workspace, module, company)); err != nil {
+// runModuleDefault runs most recon-ng modules with default source
+// ignores modules that rely on custom args or populated categories.
+func runModulesDefault(workspace string, modules []string) error {
+	ignoreModules := []string{
+		"contacts-credentials",
+		"recon/contacts-credentials/hibp_breach",
+		"recon/contacts-credentials/hibp_paste",
+		"recon/contacts-profiles/fullcontact",
+		"recon/domains-contacts/hunter_io",
+		"reporting",
+	}
+	for _, module := range modules {
+		if !localio.Contains(ignoreModules, module) {
+			if err := runModule(workspace, module, "default"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// runContactsModules runs all contacts modules after gathering emails via hunterio
+func runContactsModules(workspace string) error {
+	// first run hunterio to gather emails and populate the contacts db.
+	hunterIO := "recon/domains-contacts/hunter_io"
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=default -o count=1000 -x", workspace, hunterIO)); err != nil {
+		return err
+	}
+	contactModules := []string{
+		"recon/contacts-credentials/hibp_breach",
+		"recon/contacts-credentials/hibp_paste",
+		"recon/contacts-profiles/fullcontact",
+	}
+	if err := runModulesDefault(workspace, contactModules); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setUserAgent(workspace string) error {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -C \"options set USER-AGENT Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0\"", workspace)); err != nil {
 		return err
 	}
 	return nil
@@ -131,7 +177,7 @@ func runCompanyModule(workspace, module, company string) error {
 
 func installMarketPlaceModules(workspace string, modules []string) error {
 	for _, i := range modules {
-		if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -C \"marketplace install %s\" -x", workspace, i)); err != nil {
+		if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -C \"marketplace install %s\"", workspace, i)); err != nil {
 			return err
 		}
 	}
@@ -139,7 +185,7 @@ func installMarketPlaceModules(workspace string, modules []string) error {
 }
 
 func insertCompany(workspace, company string) error {
-	command := fmt.Sprintf("recon-cli -w %s -C \"db query insert into companies (company) select '%s' where not exists (select 1 from companies where company='%s');\" -x", workspace, company, company)
+	command := fmt.Sprintf("recon-cli -w %s -C \"db query insert into companies (company) select '%s' where not exists (select 1 from companies where company='%s');\"", workspace, company, company)
 	if err := localio.RunCommandPipeOutput(command); err != nil {
 		return err
 	}
@@ -148,7 +194,7 @@ func insertCompany(workspace, company string) error {
 
 func insertDomains(workspace string, domains []string) error {
 	for _, i := range domains {
-		command := fmt.Sprintf("recon-cli -w %s \"-C db query insert into domains (domain) select '%s' where not exists (select 1 from domains where domain='%s');\" -x", workspace, i, i)
+		command := fmt.Sprintf("recon-cli -w %s \"-C db query insert into domains (domain) select '%s' where not exists (select 1 from domains where domain='%s');\"", workspace, i, i)
 		if err := localio.RunCommandPipeOutput(command); err != nil {
 			return err
 		}
@@ -159,7 +205,7 @@ func insertDomains(workspace string, domains []string) error {
 
 func insertNetblocks(workspace string, netblocks []string) error {
 	for _, i := range netblocks {
-		command := fmt.Sprintf("recon-cli -w %s -C \"db query insert into netblocks (netblock) select '%s' where not exists (select 1 from netblocks where netblock='%s');\" -x", workspace, i, i)
+		command := fmt.Sprintf("recon-cli -w %s -C \"db query insert into netblocks (netblock) select '%s' where not exists (select 1 from netblocks where netblock='%s');\"", workspace, i, i)
 		if err := localio.RunCommandPipeOutput(command); err != nil {
 			return err
 		}
@@ -168,13 +214,14 @@ func insertNetblocks(workspace string, netblocks []string) error {
 	return nil
 }
 
+// generateReport creates html and csv report files
 func generateReport(workspace, creator, company, output string) error {
 	workReportDir, err := localio.ResolveAbsPath(output)
 	if err != nil {
 		return err
 	}
 	reportFormats := []string{"reporting/csv", "reporting/html"}
-	csvReportCategories := []string{"hosts", "ports", "contacts"}
+	csvReportCategories := []string{"hosts", "ports", "contacts", "credentials"}
 	timestamp := time.Now().Format("01-02-2006")
 
 	if exists, err := localio.Exists(filepath.Dir(workReportDir)); err == nil && !exists {
@@ -187,15 +234,15 @@ func generateReport(workspace, creator, company, output string) error {
 		switch ext {
 		case "csv":
 			for _, category := range csvReportCategories {
-				srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
-				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \"  %s -x", workspace, report, category, srcArg)
+				reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
+				cmd := fmt.Sprintf("recon-cli -w %s -m %s -o \"HEADERS = True\" -o \"TABLE = %s \" -o FILENAME=%s -x", workspace, report, category, reportFilePath)
 				if err = localio.RunCommandPipeOutput(cmd); err != nil {
 					return err
 				}
 			}
 		case "html":
-			srcArg := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
-			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" %s -x", workspace, report, creator, company, srcArg)
+			reportFilePath := fmt.Sprintf("-o FILENAME=%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" -o FILENAME=%s -x", workspace, report, creator, company, reportFilePath)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return err
 			}
@@ -206,45 +253,49 @@ func generateReport(workspace, creator, company, output string) error {
 					return err
 				}
 			}
-
 		default:
 			// Do Nothing
 		}
 	}
+	return nil
+}
 
+// setupWorkspace configures the recon-ng workspace and installs all modules
+func setupWorkspace(workspace, company string, domains, subs, netblocks []string) error {
+	if err := insertCompany(workspace, company); err != nil {
+		return err
+	}
+
+	if err := insertDomains(workspace, domains); err != nil {
+		return err
+	}
+
+	if err := insertDomains(workspace, subs); err != nil {
+		return err
+	}
+
+	if err := insertNetblocks(workspace, netblocks); err != nil {
+		return err
+	}
+
+	if err := setUserAgent(workspace); err != nil {
+		return err
+	}
+
+	// refresh install all modules
+	marketPlaceRefreshAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace refresh\"", workspace)
+	marketPlaceInstallAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace install all\"", workspace)
+	cmds := []string{marketPlaceRefreshAllCMD, marketPlaceInstallAllCMD}
+	if err := localio.RunCommandsPipeOutput(cmds); err != nil {
+		return err
+	}
 	return nil
 }
 
 // RunReconNG runs all specified modules against the target domain
 func (h *Hosts) RunReconNG(opts *Options) error {
 	localio.PrintInfo("workspace", opts.Workspace, "Running Recon-ng")
-
-	if err := insertCompany(opts.Workspace, opts.Company); err != nil {
-		return err
-	}
-
-	if err := insertDomains(opts.Workspace, h.Domains); err != nil {
-		return err
-	}
-
-	if err := insertDomains(opts.Workspace, h.SubDomains); err != nil {
-		return err
-	}
-
-	if err := insertNetblocks(opts.Workspace, h.CIDRs); err != nil {
-		return err
-	}
-
-	// refresh install all modules
-	marketPlaceRefreshAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace refresh\" -x", opts.Workspace)
-	marketPlaceInstallAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace install all\" -x", opts.Workspace)
-	cmds := []string{marketPlaceRefreshAllCMD, marketPlaceInstallAllCMD}
-	if err := localio.RunCommandsPipeOutput(cmds); err != nil {
-		return err
-	}
-
-	// Ensure recon-ng deps and censysio modules are installed.
-	if err := configureReconNGDependencies(); err != nil {
+	if err := setupWorkspace(opts.Workspace, opts.Company, h.Domains, h.SubDomains, h.CIDRs); err != nil {
 		return err
 	}
 
@@ -255,47 +306,20 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		if err := installMarketPlaceModules(opts.Workspace, modules); err != nil {
 			return err
 		}
-		// Run a second time as
+
+		// Ensure recon-ng deps and censysio modules are installed.
 		if err := configureReconNGDependencies(); err != nil {
 			return err
 		}
 
-		// run all modules against all base domains
-		for _, domain := range h.Domains {
-			for _, module := range modules {
-				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
-					if err := runModule(opts.Workspace, module, domain); err != nil {
-						return err
-					}
-				}
-			}
+		if err := runModulesDefault(opts.Workspace, modules); err != nil {
+			return err
 		}
 
-		for _, netblock := range h.CIDRs {
-			for _, module := range modules {
-				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
-					if err := runModule(opts.Workspace, module, netblock); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		for _, module := range modules {
-			if strings.Contains(module, "companies") {
-				if err := runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
-					return err
-				}
-			}
-		}
-
-		for _, module := range modules {
-			if err := runModule(opts.Workspace, module, "default"); err != nil {
-				return err
-			}
+		if err := runContactsModules(opts.Workspace); err != nil {
+			return err
 		}
 	case reflect.String:
-		// install any extra modules not included in "all" ^
 		modules, err := localio.ReadLines(opts.Modules.(string))
 		if err != nil {
 			return err
@@ -306,39 +330,13 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 		if err := configureReconNGDependencies(); err != nil {
 			return err
 		}
-		// run all modules against all base domains
-		for _, domain := range h.Domains {
-			for _, module := range modules {
-				if strings.Contains(module, "domains") || strings.Contains(module, "hackertarget") {
-					if err = runModule(opts.Workspace, module, domain); err != nil {
-						return err
-					}
-				}
-			}
+
+		if err := runModulesDefault(opts.Workspace, modules); err != nil {
+			return err
 		}
 
-		for _, netblock := range h.CIDRs {
-			for _, module := range modules {
-				if strings.Contains(module, "hosts-hosts") || strings.Contains(module, "hosts-ports") {
-					if err = runModule(opts.Workspace, module, netblock); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		for _, module := range modules {
-			if strings.Contains(module, "companies") {
-				if err = runCompanyModule(opts.Workspace, module, opts.Company); err != nil {
-					return err
-				}
-			}
-		}
-
-		for _, module := range modules {
-			if err = runModule(opts.Workspace, module, "default"); err != nil {
-				return err
-			}
+		if err := runContactsModules(opts.Workspace); err != nil {
+			return err
 		}
 	}
 
