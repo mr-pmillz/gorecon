@@ -128,8 +128,6 @@ func NewScope(opts *Options) (*Hosts, error) {
 
 // recon-ng csv parser section
 
-// "ip_address","host","port","protocol","banner","notes","module"
-
 type NGAllCSV struct {
 	Ports    NGPortsCSV
 	Hosts    NGHostsCSV

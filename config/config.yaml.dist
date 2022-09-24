@@ -23,7 +23,6 @@ MODULES: |-
   recon/domains-hosts/shodan_hostname
   recon/domains-hosts/ssl_san
   recon/domains-vulnerabilities/xssed
-  recon/hosts-hosts/bing_ip
   recon/hosts-hosts/resolve
   recon/hosts-hosts/reverse_resolve
   recon/hosts-hosts/ssltools
