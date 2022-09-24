@@ -24,7 +24,7 @@ type Hosts struct {
 //nolint:gocyclo
 //nolint:gocyclo
 func NewScope(opts *Options) (*Hosts, error) {
-	fmt.Println("[+] Generating Scope Information")
+	localio.PrintInfo("Company", opts.Company, "Generating External Scope Information")
 	hosts := new(Hosts)
 	// check if domain arg is file, string, or a slice
 	rtd := reflect.TypeOf(opts.Domain)

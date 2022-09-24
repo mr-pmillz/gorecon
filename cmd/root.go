@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -54,9 +53,7 @@ func initConfig() {
 
 	// If a config file is found, read it.
 	if err := viper.ReadInConfig(); err == nil {
-		if _, err = fmt.Fprintln(os.Stderr, "[+] Using config file:", viper.ConfigFileUsed()); err != nil {
-			return
-		}
+		localio.PrintInfo("ConfigFile", viper.ConfigFileUsed(), "Using config file:")
 	}
 
 	viper.SetEnvPrefix(envPrefix)
