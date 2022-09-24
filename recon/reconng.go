@@ -175,11 +175,13 @@ func setUserAgent(workspace string) error {
 	return nil
 }
 
-func installMarketPlaceModules(workspace string, modules []string) error {
-	for _, i := range modules {
-		if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -C \"marketplace install %s\"", workspace, i)); err != nil {
-			return err
-		}
+func installMarketPlaceModules(workspace string) error {
+	// refresh install all modules
+	marketPlaceRefreshAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace refresh\"", workspace)
+	marketPlaceInstallAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace install all\"", workspace)
+	cmds := []string{marketPlaceRefreshAllCMD, marketPlaceInstallAllCMD}
+	if err := localio.RunCommandsPipeOutput(cmds); err != nil {
+		return err
 	}
 	return nil
 }
@@ -282,11 +284,11 @@ func setupWorkspace(workspace, company string, domains, subs, netblocks []string
 		return err
 	}
 
-	// refresh install all modules
-	marketPlaceRefreshAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace refresh\"", workspace)
-	marketPlaceInstallAllCMD := fmt.Sprintf("recon-cli -w %s -C \"marketplace install all\"", workspace)
-	cmds := []string{marketPlaceRefreshAllCMD, marketPlaceInstallAllCMD}
-	if err := localio.RunCommandsPipeOutput(cmds); err != nil {
+	if err := installMarketPlaceModules(workspace); err != nil {
+		return err
+	}
+	// Ensure recon-ng deps and censysio modules are installed.
+	if err := configureReconNGDependencies(); err != nil {
 		return err
 	}
 	return nil
@@ -303,14 +305,6 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 	switch rt.Kind() {
 	case reflect.Slice:
 		modules := opts.Modules.([]string)
-		if err := installMarketPlaceModules(opts.Workspace, modules); err != nil {
-			return err
-		}
-
-		// Ensure recon-ng deps and censysio modules are installed.
-		if err := configureReconNGDependencies(); err != nil {
-			return err
-		}
 
 		if err := runModulesDefault(opts.Workspace, modules); err != nil {
 			return err
@@ -322,12 +316,6 @@ func (h *Hosts) RunReconNG(opts *Options) error {
 	case reflect.String:
 		modules, err := localio.ReadLines(opts.Modules.(string))
 		if err != nil {
-			return err
-		}
-		if err = installMarketPlaceModules(opts.Workspace, modules); err != nil {
-			return err
-		}
-		if err := configureReconNGDependencies(); err != nil {
 			return err
 		}
 
