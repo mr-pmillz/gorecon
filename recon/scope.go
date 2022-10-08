@@ -5,11 +5,10 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/mr-pmillz/gorecon/localio"
-
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gocarina/gocsv"
-	tld "github.com/jpillora/go-tld"
+	"github.com/jpillora/go-tld"
+	"github.com/mr-pmillz/gorecon/localio"
 )
 
 type Hosts struct {
@@ -18,10 +17,10 @@ type Hosts struct {
 	CIDRs      []string
 	IPv4s      []string
 	IPv6s      []string
+	OutOfScope []string
 }
 
 //nolint:gocognit
-//nolint:gocyclo
 //nolint:gocyclo
 func NewScope(opts *Options) (*Hosts, error) {
 	localio.PrintInfo("Company", opts.Company, "Generating External Scope Information")
@@ -124,8 +123,80 @@ func NewScope(opts *Options) (*Hosts, error) {
 			}
 		}
 	}
+	outOfScope := reflect.TypeOf(opts.OutOfScope)
+	switch outOfScope.Kind() {
+	case reflect.Slice:
+		hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.([]string)...)
+	case reflect.String:
+		if opts.OutOfScope.(string) != "" {
+			if exists, err := localio.Exists(opts.OutOfScope.(string)); exists && err == nil {
+				outOfScopes, err := localio.ReadLines(opts.OutOfScope.(string))
+				if err != nil {
+					return nil, err
+				}
+				hosts.OutOfScope = append(hosts.OutOfScope, outOfScopes...)
+			} else {
+				hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.(string))
+			}
+		}
+	}
 
 	return hosts, nil
+}
+
+// removeDuplicateStr removes duplicate strings from a slice of strings
+func removeDuplicateStr(strSlice []string) []string { //nolint:typecheck
+	allKeys := make(map[string]bool)
+	var list []string
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+// GenerateURLs creates a slice of http and https urls from recon-ng results scope.
+func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { //nolint:typecheck
+	var urls []string //nolint:prealloc
+	ignoreDomains := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri"}
+	ignoreDomains = append(ignoreDomains, h.OutOfScope...)
+
+	// create http and https urls from found hosts
+	for _, host := range scope.Hosts {
+		if !localio.ContainsChars(ignoreDomains, host.Host) && !localio.ContainsChars(ignoreDomains, host.IP) && host.Host != "" && host.IP != "" {
+			urls = append(urls, fmt.Sprintf("http://%s", host.Host))
+			urls = append(urls, fmt.Sprintf("https://%s", host.Host))
+			urls = append(urls, fmt.Sprintf("http://%s", host.IP))
+			urls = append(urls, fmt.Sprintf("https://%s", host.IP))
+		}
+	}
+	for _, hostPort := range scope.Ports {
+		if !localio.ContainsChars(ignoreDomains, hostPort.Host) && !localio.ContainsChars(ignoreDomains, hostPort.IP) && hostPort.Host != "" && hostPort.IP != "" {
+			switch hostPort.Port {
+			case "21", "22", "25", "53", "110", "119", "123", "135", "139", "143", "179", "194", "445", "500", "1433", "3389", "5985":
+				// Do nothing
+			case "80":
+				urls = append(urls, fmt.Sprintf("http://%s", hostPort.Host))
+				urls = append(urls, fmt.Sprintf("http://%s", hostPort.IP))
+			case "443":
+				urls = append(urls, fmt.Sprintf("https://%s", hostPort.Host))
+				urls = append(urls, fmt.Sprintf("https://%s", hostPort.IP))
+			default:
+				urls = append(urls, fmt.Sprintf("http://%s:%s/", hostPort.Host, hostPort.Port))
+				urls = append(urls, fmt.Sprintf("http://%s:%s/", hostPort.IP, hostPort.Port))
+				urls = append(urls, fmt.Sprintf("https://%s:%s/", hostPort.Host, hostPort.Port))
+				urls = append(urls, fmt.Sprintf("https://%s:%s/", hostPort.IP, hostPort.Port))
+			}
+		}
+	}
+	for _, sub := range subs {
+		urls = append(urls, fmt.Sprintf("http://%s", sub))
+		urls = append(urls, fmt.Sprintf("https://%s", sub))
+	}
+
+	return removeDuplicateStr(urls), nil
 }
 
 // recon-ng csv parser section
@@ -178,7 +249,7 @@ type CsvReportFiles struct {
 	contacts string
 }
 
-func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) {
+func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:typecheck
 	scope := NGScope{}
 	ports, err := os.OpenFile(csvFiles.ports, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {

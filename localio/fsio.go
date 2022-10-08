@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -36,6 +37,18 @@ import (
 func Contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ContainsChars checks if string chars are present in a slice
+func ContainsChars(s []string, str string) bool {
+	for _, v := range s {
+		parts := strings.Split(str, ".")
+		if Contains(parts, v) {
 			return true
 		}
 	}
@@ -161,6 +174,19 @@ func PrintInfo(key, val, msg string) {
 	gologger.Info().Str(key, val).Msg(msg)
 }
 
+func LogError(err error) error {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.Error()
+	return err
+}
+
+// LogFatal is a wrapper around gologger Info method
+func LogFatal(err error, msg string) {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.Debug().Str("Error", err.Error()).Msg(msg)
+	gologger.Fatal()
+}
+
 // ExecCMD Execute a command
 func ExecCMD(command string, verbose bool) (string, error) {
 	if verbose {
@@ -187,6 +213,18 @@ func PrettyPrint(v interface{}) (err error) {
 		fmt.Println(string(b))
 	}
 	return
+}
+
+// WriteStructToFile writes a struct to an output json file
+func WriteStructToFile(v interface{}, jsonOutputFilePath string) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(jsonOutputFilePath, data, 0600); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ResolveAbsPath ...
@@ -384,16 +422,16 @@ func ReadLines(path string) ([]string, error) {
 }
 
 // WriteLines writes the lines to the given file.
-// func WriteLines(lines []string, path string) error {
-//	file, err := os.Create(path)
-//	if err != nil {
-//		return err
-//	}
-//	defer file.Close()
-//
-//	w := bufio.NewWriter(file)
-//	for _, line := range lines {
-//		fmt.Fprintln(w, line)
-//	}
-//	return w.Flush()
-//}
+func WriteLines(lines []string, path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	return w.Flush()
+}
