@@ -3,6 +3,7 @@ package recon
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/projectdiscovery/httpx/runner"
@@ -37,7 +38,6 @@ func runHTTPX(urls []string, outputDir string) error {
 		Threads:            20,
 		OutputServerHeader: true,
 		LeaveDefaultPorts:  true,
-		ShowStatistics:     true,
 	}
 	if err := options.ValidateOptions(); err != nil {
 		log.Fatal(err)
@@ -56,11 +56,11 @@ func runHTTPX(urls []string, outputDir string) error {
 }
 
 // runHTTPXOutputCSV runs httpx against a slice of urls ...
-func runHTTPXOutputCSV(urls []string, outputDir string) error {
+func runHTTPXOutputCSV(urls []string, outputDir string) (string, error) {
 	// write urls to file
 	urlsFile := fmt.Sprintf("%s/all-urls.txt", outputDir)
 	if err := localio.WriteLines(urls, urlsFile); err != nil {
-		return localio.LogError(err)
+		return "", localio.LogError(err)
 	}
 
 	options := runner.Options{
@@ -86,7 +86,6 @@ func runHTTPXOutputCSV(urls []string, outputDir string) error {
 		Threads:            20,
 		OutputServerHeader: true,
 		LeaveDefaultPorts:  true,
-		ShowStatistics:     true,
 		Verbose:            false,
 		OutputContentType:  true,
 		OutputMethod:       true,
@@ -107,7 +106,13 @@ func runHTTPXOutputCSV(urls []string, outputDir string) error {
 	defer httpxRunner.Close()
 
 	localio.PrintInfo("Httpx", "CSV", "Httpx Generating CSV File")
+	temp := os.Stdout
+	temperr := os.Stderr
+	os.Stdout = nil
+	os.Stderr = nil
 	httpxRunner.RunEnumeration()
+	os.Stdout = temp
+	os.Stderr = temperr
 
-	return nil
+	return fmt.Sprintf("%s/httpx-output.csv", outputDir), nil
 }

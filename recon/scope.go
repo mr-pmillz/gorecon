@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gocarina/gocsv"
@@ -199,14 +200,61 @@ func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { /
 	return removeDuplicateStr(urls), nil
 }
 
+type HttpxOutputCSV struct {
+	Timestamp        string `csv:"timestamp,omitempty"`
+	Asn              string `csv:"asn,omitempty"`
+	Csp              string `csv:"csp,omitempty"`
+	TLSGrab          string `csv:"tls-grab,omitempty"`
+	Hashes           string `csv:"hashes,omitempty"`
+	Regex            string `csv:"regex,omitempty"`
+	CdnName          string `csv:"cdn-name,omitempty"`
+	Port             int    `csv:"port,omitempty"`
+	URL              string `csv:"url,omitempty"`
+	Input            string `csv:"input,omitempty"`
+	Location         string `csv:"location,omitempty"`
+	Title            string `csv:"title,omitempty"`
+	Scheme           string `csv:"scheme,omitempty"`
+	Error            string `csv:"error,omitempty"`
+	Webserver        string `csv:"webserver,omitempty"`
+	ResponseBody     string `csv:"response-body,omitempty"`
+	ContentType      string `csv:"content-type,omitempty"`
+	Method           string `csv:"method,omitempty"`
+	Host             string `csv:"host,omitempty"`
+	Path             string `csv:"path,omitempty"`
+	FaviconMmh3      string `csv:"favicon-mmh3,omitempty"`
+	FinalURL         string `csv:"final-url,omitempty"`
+	ResponseHeader   string `csv:"response-header,omitempty"`
+	Request          string `csv:"request,omitempty"`
+	ResponseTime     string `csv:"response-time,omitempty"`
+	Jarm             string `csv:"jarm,omitempty"`
+	ChainStatusCodes string `csv:"chain-status-codes,omitempty"`
+	A                string `csv:"a,omitempty"`
+	Cnames           string `csv:"cnames,omitempty"`
+	Technologies     string `csv:"technologies,omitempty"`
+	Extracts         string `csv:"extracts,omitempty"`
+	Chain            string `csv:"chain,omitempty"`
+	Words            int    `csv:"words,omitempty"`
+	Lines            int    `csv:"lines,omitempty"`
+	StatusCode       int    `csv:"status-code,omitempty"`
+	ContentLength    int    `csv:"content-length,omitempty"`
+	Failed           bool   `csv:"failed,omitempty"`
+	Vhost            bool   `csv:"vhost,omitempty"`
+	Websocket        bool   `csv:"websocket,omitempty"`
+	Cdn              bool   `csv:"cdn,omitempty"`
+	HTTP2            bool   `csv:"http2,omitempty"`
+	Pipeline         bool   `csv:"pipeline,omitempty"`
+}
+
 // recon-ng csv parser section
 
 type NGScope struct {
 	URLs          []string
 	URLsWithPorts []string
+	Domains       []string
 	Hosts         []NGHostsCSV
 	Contacts      []NGContactsCSV
 	Ports         []NGPortsCSV
+	HttpxData     []HttpxOutputCSV
 }
 
 type NGPortsCSV struct {
@@ -249,6 +297,101 @@ type CsvReportFiles struct {
 	contacts string
 }
 
+// ParseHttpxCSV maps the httpx output csv results to a struct
+func ParseHttpxCSV(csvFilePath string) (*NGScope, error) {
+	scope := NGScope{}
+	data, err := os.OpenFile(csvFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	defer data.Close()
+
+	var httpx []*HttpxOutputCSV
+
+	gocsv.SetCSVReader(gocsv.LazyCSVReader)
+
+	if err = gocsv.UnmarshalFile(data, &httpx); err != nil {
+		return nil, err
+	}
+
+	if _, err = data.Seek(0, 0); err != nil {
+		return nil, err
+	}
+
+	for _, i := range httpx {
+		scope.HttpxData = append(scope.HttpxData, HttpxOutputCSV{
+			Timestamp:        i.Timestamp,
+			Asn:              i.Asn,
+			Csp:              i.Csp,
+			TLSGrab:          i.TLSGrab,
+			Hashes:           i.Hashes,
+			Regex:            i.Regex,
+			CdnName:          i.CdnName,
+			Port:             i.Port,
+			URL:              i.URL,
+			Input:            i.Input,
+			Location:         i.Location,
+			Title:            i.Title,
+			Scheme:           i.Scheme,
+			Error:            i.Error,
+			Webserver:        i.Webserver,
+			ResponseBody:     i.ResponseBody,
+			ContentType:      i.ContentType,
+			Method:           i.Method,
+			Host:             i.Host,
+			Path:             i.Path,
+			FaviconMmh3:      i.FaviconMmh3,
+			FinalURL:         i.FinalURL,
+			ResponseHeader:   i.ResponseHeader,
+			Request:          i.Request,
+			ResponseTime:     i.ResponseTime,
+			Jarm:             i.Jarm,
+			ChainStatusCodes: i.ChainStatusCodes,
+			A:                i.A,
+			Cnames:           i.Cnames,
+			Technologies:     i.Technologies,
+			Extracts:         i.Extracts,
+			Chain:            i.Chain,
+			Words:            i.Words,
+			Lines:            i.Lines,
+			StatusCode:       i.StatusCode,
+			ContentLength:    i.ContentLength,
+			Failed:           i.Failed,
+			Vhost:            i.Vhost,
+			Websocket:        i.Websocket,
+			Cdn:              i.Cdn,
+			HTTP2:            i.HTTP2,
+			Pipeline:         i.Pipeline,
+		})
+	}
+
+	return &scope, nil //nolint:typecheck
+}
+
+// WriteHttpxURLsToFile writes the httpx responsive urls to a file.
+func WriteHttpxURLsToFile(csvFilePath, outputDir string) (string, error) {
+	data, err := ParseHttpxCSV(csvFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	var urls []string //nolint:prealloc
+
+	for _, i := range data.HttpxData {
+		if i.StatusCode != 404 {
+			urls = append(urls, i.URL)
+		}
+	}
+
+	outputFilePath := fmt.Sprintf("%s/httpx-responsive-urls.txt", outputDir)
+
+	if err = localio.WriteLines(urls, outputFilePath); err != nil {
+		return "", err
+	}
+
+	return outputFilePath, nil
+}
+
 func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:typecheck
 	scope := NGScope{}
 	ports, err := os.OpenFile(csvFiles.ports, os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -261,11 +404,11 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 
 	gocsv.SetCSVReader(gocsv.LazyCSVReader)
 
-	if err := gocsv.UnmarshalFile(ports, &p); err != nil {
+	if err = gocsv.UnmarshalFile(ports, &p); err != nil {
 		return nil, err
 	}
 
-	if _, err := ports.Seek(0, 0); err != nil {
+	if _, err = ports.Seek(0, 0); err != nil {
 		return nil, err
 	}
 
@@ -289,11 +432,11 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 
 	var h []*NGHostsCSV
 
-	if err := gocsv.UnmarshalFile(reportHosts, &h); err != nil {
+	if err = gocsv.UnmarshalFile(reportHosts, &h); err != nil {
 		return nil, err
 	}
 
-	if _, err := reportHosts.Seek(0, 0); err != nil {
+	if _, err = reportHosts.Seek(0, 0); err != nil {
 		return nil, err
 	}
 	for _, i := range h {
@@ -307,6 +450,13 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 			Notes:   i.Notes,
 			Module:  i.Module,
 		})
+		parts := strings.Split(i.Host, ".")
+		if len(parts) == 2 {
+			d := strings.Join(parts, ".")
+			if !localio.Contains(scope.Domains, d) {
+				scope.Domains = append(scope.Domains, d)
+			}
+		}
 	}
 
 	contacts, err := os.OpenFile(csvFiles.contacts, os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -317,11 +467,11 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 
 	var c []*NGContactsCSV
 
-	if err := gocsv.UnmarshalFile(contacts, &c); err != nil {
+	if err = gocsv.UnmarshalFile(contacts, &c); err != nil {
 		return nil, err
 	}
 
-	if _, err := contacts.Seek(0, 0); err != nil {
+	if _, err = contacts.Seek(0, 0); err != nil {
 		return nil, err
 	}
 	for _, i := range c {

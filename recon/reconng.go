@@ -235,11 +235,12 @@ func generateReport(workspace, creator, company, output string) (*CsvReportFiles
 		}
 	}
 	for _, report := range reportFormats {
+		_company := strings.ReplaceAll(company, " ", "_")
 		ext := strings.Split(report, "/")[1]
 		switch ext {
 		case "csv":
 			for _, category := range csvReportCategories {
-				reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s-%s.%s", workReportDir, company, category, timestamp, ext)
+				reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s-%s.%s", workReportDir, _company, category, timestamp, ext)
 				switch category {
 				case "hosts":
 					csvReportFiles.hosts = reportFilePath
@@ -256,25 +257,25 @@ func generateReport(workspace, creator, company, output string) (*CsvReportFiles
 				}
 			}
 		case "html":
-			reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+			reportFilePath := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, _company, timestamp, ext)
 			command := fmt.Sprintf("recon-cli -w %s -m %s -o \"CREATOR = %s\" -o \"CUSTOMER = %s\" -o \"FILENAME=%s\" -x", workspace, report, creator, company, reportFilePath)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return nil, err
 			}
 
 			if !localio.IsHeadless() {
-				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, company, timestamp, ext)
+				htmlReport := fmt.Sprintf("%s/recon-ng-%s-%s.%s", workReportDir, _company, timestamp, ext)
 				if err = localio.RunCommandPipeOutput(fmt.Sprintf("firefox %s", htmlReport)); err != nil {
 					return nil, err
 				}
 			}
 		case "list":
-			hostIps := fmt.Sprintf("%s/recon-ng-%s-hosts-ip-addresses-%s.txt", workReportDir, company, timestamp)
-			hostDomains := fmt.Sprintf("%s/recon-ng-%s-hosts-hosts-%s.txt", workReportDir, company, timestamp)
-			portsIps := fmt.Sprintf("%s/recon-ng-%s-ports-ips-%s.txt", workReportDir, company, timestamp)
-			portsHost := fmt.Sprintf("%s/recon-ng-%s-ports-hosts-ip-%s.txt", workReportDir, company, timestamp)
-			portsPort := fmt.Sprintf("%s/recon-ng-%s-ports-ports-%s.txt", workReportDir, company, timestamp)
-			contactsEmails := fmt.Sprintf("%s/recon-ng-%s-emails-%s.txt", workReportDir, company, timestamp)
+			hostIps := fmt.Sprintf("%s/recon-ng-%s-hosts-ip-addresses-%s.txt", workReportDir, _company, timestamp)
+			hostDomains := fmt.Sprintf("%s/recon-ng-%s-hosts-hosts-%s.txt", workReportDir, _company, timestamp)
+			portsIps := fmt.Sprintf("%s/recon-ng-%s-ports-ips-%s.txt", workReportDir, _company, timestamp)
+			portsHost := fmt.Sprintf("%s/recon-ng-%s-ports-hosts-ip-%s.txt", workReportDir, _company, timestamp)
+			portsPort := fmt.Sprintf("%s/recon-ng-%s-ports-ports-%s.txt", workReportDir, _company, timestamp)
+			contactsEmails := fmt.Sprintf("%s/recon-ng-%s-emails-%s.txt", workReportDir, _company, timestamp)
 			hostIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = ip_address\" -x", workspace, report, hostIps)
 			hostDomainsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = hosts\" -o \"COLUMN = host\" -x", workspace, report, hostDomains)
 			portsIPsCMD := fmt.Sprintf("recon-cli -w %s -m %s -o \"FILENAME=%s\" -o \"TABLE = ports\" -o \"COLUMN = ip_address\" -x", workspace, report, portsIps)
@@ -328,6 +329,40 @@ func setupWorkspace(workspace, company string, domains, subs, netblocks []string
 		return err
 	}
 	return nil
+}
+
+// ThoroughReconNG Runs recon-ng a second time inserting any new base domains if found.
+// If no new base domains were found. Skip.
+func (h *Hosts) ThoroughReconNG(opts *Options) (*CsvReportFiles, error) {
+	if err := insertDomains(opts.Workspace, h.Domains); err != nil {
+		return nil, err
+	}
+
+	rt := reflect.TypeOf(opts.Modules)
+	switch rt.Kind() {
+	case reflect.Slice:
+		modules := opts.Modules.([]string)
+
+		if err := runModulesDefault(opts.Workspace, modules); err != nil {
+			return nil, err
+		}
+	case reflect.String:
+		modules, err := localio.ReadLines(opts.Modules.(string))
+		if err != nil {
+			return nil, err
+		}
+
+		if err = runModulesDefault(opts.Workspace, modules); err != nil {
+			return nil, err
+		}
+	}
+
+	csvReports, err := generateReport(opts.Workspace, opts.Creator, opts.Company, opts.Output)
+	if err != nil {
+		return nil, err
+	}
+
+	return csvReports, nil
 }
 
 // RunReconNG runs all specified modules against the target domain

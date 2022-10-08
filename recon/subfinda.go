@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 
 	"github.com/mr-pmillz/gorecon/localio"
@@ -31,7 +32,6 @@ func runSubfinder(domains []string, outputDir string) ([]string, error) {
 			Silent:             false,
 			Verbose:            true,
 			NoColor:            false,
-			OutputFile:         fmt.Sprintf("%s/subfinder-%s.txt", outputDir, domain),
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -48,6 +48,9 @@ func runSubfinder(domains []string, outputDir string) ([]string, error) {
 		}
 
 		fmt.Printf("%s", data)
+		if err = ioutil.WriteFile(fmt.Sprintf("%s/subfinder-%s.txt", outputDir, domain), data, 0644); err != nil { //nolint:gosec
+			return nil, err
+		}
 	}
 
 	subs, err := parseOutputFiles(domains, outputDir)

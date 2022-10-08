@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -25,13 +24,13 @@ import (
 )
 
 // CommandExists ...
-// func CommandExists(cmd string) (string, bool) {
-//	cmdPath, err := exec.LookPath(cmd)
-//	if err != nil {
-//		return "", false
-//	}
-//	return cmdPath, true
-//}
+func CommandExists(cmd string) (string, bool) {
+	cmdPath, err := exec.LookPath(cmd)
+	if err != nil {
+		return "", false
+	}
+	return cmdPath, true
+}
 
 // Contains checks if a string is present in a slice
 func Contains(s []string, str string) bool {
@@ -45,6 +44,7 @@ func Contains(s []string, str string) bool {
 }
 
 // ContainsChars checks if string chars are present in a slice
+// for checking domains existing in other subdomains
 func ContainsChars(s []string, str string) bool {
 	for _, v := range s {
 		parts := strings.Split(str, ".")
@@ -216,16 +216,16 @@ func PrettyPrint(v interface{}) (err error) {
 }
 
 // WriteStructToFile writes a struct to an output json file
-func WriteStructToFile(v interface{}, jsonOutputFilePath string) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(jsonOutputFilePath, data, 0600); err != nil {
-		return err
-	}
-	return nil
-}
+// func WriteStructToFile(v interface{}, jsonOutputFilePath string) error {
+//	data, err := json.MarshalIndent(v, "", "  ")
+//	if err != nil {
+//		return err
+//	}
+//	if err = ioutil.WriteFile(jsonOutputFilePath, data, 0644); err != nil { //nolint:gosec
+//		return err
+//	}
+//	return nil
+// }
 
 // ResolveAbsPath ...
 func ResolveAbsPath(path string) (string, error) {
