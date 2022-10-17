@@ -42,7 +42,7 @@ test:
 	$(info ******************** running tests ********************)
     ifeq ($(GITHUB_ACTIONS), true)
         ifndef GOTESTFMT
-			$(warning "could not find gotestfmt in $(PATH), running: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest")
+			$(warning "could not find gotestfmt in $(PATH), running: go install github.com/GoTestTools/gotestfmt/v2/cmd/gotestfmt@latest")
 			$(shell go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest)
         endif
 		go test -json -v ./... 2>&1 | tee coverage/gotest.log | gotestfmt
