@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	"io"
 	"log"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/spf13/cobra"
 
-	"github.com/go-git/go-git/v5"
 	gogitex "github.com/go-git/go-git/v5/_examples"
 	"github.com/spf13/viper"
 )
@@ -114,7 +114,8 @@ func RunCommandPipeOutput(command string) error {
 		return err
 	}
 
-	timeout := 60
+	// Increase timeout for long-running recon-ng process
+	timeout := 600
 
 	var cancel context.CancelFunc
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Minute)
