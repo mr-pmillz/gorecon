@@ -14,6 +14,7 @@ Table of Contents
 * [Gorecon](#gorecon)
 * [Table of Contents](#table-of-contents)
   * [About](#about)
+  * [Future Feature Presentation](#future-feature-presentation)
   * [Docs](#docs)
   * [Installation](#installation)
   * [Usage](#usage)
@@ -22,11 +23,11 @@ Table of Contents
 
 This project was built to automate various repetitive tasks for external recon gathering.
 Currently, runs the following tools in this order
-- dnsrecon
-- recon-ng
-- subfinder
-- httpx
-- gowitness
+1. dnsrecon
+2. recon-ng
+3. subfinder
+4. httpx
+5. gowitness
 
 ## Future Feature Presentation
 
@@ -111,6 +112,6 @@ See [config.yaml](config/config.yaml.dist)
 
 examples
 ```shell
-./gorecon recon -c COMPANY-NAME -d BASE-DOMAIN -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/work
-./gorecon recon -c COMPANY-NAME -d domains.txt -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/work
+./gorecon recon -c COMPANY-NAME -d BASE-DOMAIN -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/target-output
+./gorecon recon -c COMPANY-NAME -d domains.txt -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/target-output
 ```
