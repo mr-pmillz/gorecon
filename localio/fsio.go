@@ -55,11 +55,8 @@ func ContainsChars(s []string, str string) bool {
 			return true
 		}
 	}
-	if Contains(s, str) {
-		return true
-	}
 
-	return false
+	return Contains(s, str)
 }
 
 // Exists returns whether the given file or directory exists
@@ -118,6 +115,7 @@ func TimeTrack(start time.Time, name string) {
 func RunCommandPipeOutput(command string) error {
 	defer TimeTrack(time.Now(), command)
 	PrintInfo("Command", command, "Running Command [+]")
+	LogInfo("Command", command, "Running Command ")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return err
@@ -178,6 +176,7 @@ func RunCommandsPipeOutput(commands []string) error {
 	return nil
 }
 
+// LogInfo logs to a json file
 func LogInfo(key, val, msg string) {
 	fname := "gorecon-command-log.json"
 
