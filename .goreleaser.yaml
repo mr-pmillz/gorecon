@@ -19,7 +19,6 @@ builds:
       -s -w
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
       - "386"

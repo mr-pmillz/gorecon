@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"io"
 	"log"
 	"os"
@@ -14,6 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/projectdiscovery/gologger/formatter"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -44,7 +46,8 @@ func Contains(s []string, str string) bool {
 }
 
 // ContainsChars checks if string chars are present in a slice
-// for checking domains existing in other subdomains
+// for checking domains existing in other subdomains.
+// Also checks exact matches
 func ContainsChars(s []string, str string) bool {
 	for _, v := range s {
 		parts := strings.Split(str, ".")
@@ -52,12 +55,18 @@ func ContainsChars(s []string, str string) bool {
 			return true
 		}
 	}
+	if Contains(s, str) {
+		return true
+	}
 
 	return false
 }
 
 // Exists returns whether the given file or directory exists
 func Exists(path string) (bool, error) {
+	if path == "" {
+		return false, nil
+	}
 	absPath, err := ResolveAbsPath(path)
 	if err != nil {
 		return false, err
@@ -114,8 +123,8 @@ func RunCommandPipeOutput(command string) error {
 		return err
 	}
 
-	// Increase timeout for long-running recon-ng process
-	timeout := 600
+	// Increase timeout to 24 hours for long-running recon-ng process
+	timeout := 1440
 
 	var cancel context.CancelFunc
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Minute)
@@ -167,6 +176,19 @@ func RunCommandsPipeOutput(commands []string) error {
 		}
 	}
 	return nil
+}
+
+func LogInfo(key, val, msg string) {
+	fname := "gorecon-command-log.json"
+
+	f, err := os.OpenFile(fname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	teeformatter := formatter.NewTee(formatter.NewCLI(false), f)
+	gologger.DefaultLogger.SetFormatter(teeformatter)
+	gologger.Info().Str(key, val).Msg(msg)
 }
 
 // PrintInfo is a wrapper around gologger Info method
@@ -387,6 +409,18 @@ func NewPipInstalled() (*PipInstalled, error) {
 	pip.Name = append(pip.Name, installedList...)
 
 	return pip, nil
+}
+
+// InstallPython3VirtualEnv installs virtualenv via apt
+func InstallPython3VirtualEnv() error {
+	// ridonkulous bug https://askubuntu.com/questions/1406304/virtualenv-installs-envs-into-local-bin-instead-of-bin
+	// virtualenv < 20.16.5 installs envs into local/bin instead of bin... :|
+	// to work around this, just always update and install virtualenv + deps as opposed to checking semantic versioning
+	// and adding another module like https://github.com/Masterminds/semver
+	if err := RunCommandPipeOutput("sudo apt-get update -y && sudo apt-get -q install virtualenv python3-distutils python3-virtualenv -y"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GitClone clones a public git repo url to directory

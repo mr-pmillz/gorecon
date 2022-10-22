@@ -9,6 +9,8 @@ import (
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gocarina/gocsv"
 	"github.com/jpillora/go-tld"
+	"github.com/projectdiscovery/mapcidr"
+
 	"github.com/mr-pmillz/gorecon/localio"
 )
 
@@ -490,4 +492,20 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 	}
 
 	return &scope, nil
+}
+
+func (h *Hosts) isDomainInScope(domain string) bool {
+	// check that domain is in scope by resolving and checking against netblocks
+	ipv4s, _ := resolveDomainToIP(domain)
+	if len(ipv4s) > 0 {
+		for _, netblock := range h.CIDRs {
+			ips, _ := mapcidr.IPAddresses(netblock)
+			for _, ip := range ips {
+				if localio.Contains(ipv4s, ip) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

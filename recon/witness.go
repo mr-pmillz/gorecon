@@ -2,13 +2,15 @@ package recon
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
 	"os"
+
+	"github.com/mr-pmillz/gorecon/localio"
 )
 
 // runGoWitness installs the latest version and runs goWitness
 func runGoWitness(httpxCSV, outputDir string) error {
 	// install the latest version of goWitness
+	// TODO: Run GoWitness Natively in Go...
 	if err := localio.RunCommandPipeOutput("go install github.com/sensepost/gowitness@latest"); err != nil {
 		return err
 	}

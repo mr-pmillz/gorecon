@@ -21,11 +21,23 @@ Table of Contents
 ## About
 
 This project was built to automate various repetitive tasks for external recon gathering.
+Currently, runs the following tools in this order
+- dnsrecon
+- recon-ng
+- subfinder
+- httpx
+- gowitness
+
+## Future Feature Presentation
+
+As an optional feature ToDo:
+- Add terraform and ansible to set up elasticsearch & kibana (ELK)
+- Then push results to elastic and create nice reports  ¯\_(ツ)_/¯ :man_shrugging:
 
 ## Docs
 
   * [gorecon](docs/gorecon.md)                         - Automate external recon.
-  * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules. So far just recon-ng is completed.
+  * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
 
 ## Installation
 
@@ -38,10 +50,21 @@ go install github.com/mr-pmillz/gorecon@latest
 
 create your [config.yaml](config/config.yaml.dist) file
 ensure netblock ips are in IPv4 CIDR range formats. For a single ip, you would use 10.10.10.111/32
+**DO NOT PUT COMMENTS in your config.yaml file.** This will break vipers parsing of the configuration.
 
 ```shell
 cp config/config.yaml.dist config.yaml
 ```
+
+For best results, ensure you add your api keys to recon-ng, at the very least, the free ones.
+Can also add api keys file path to subfinder via config.yaml.
+For example
+```yaml
+SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
+```
+- See [Subfinder-Post-Installation-Instructions](https://github.com/projectdiscovery/subfinder#post-installation-instructions)
+
+By default, gorecon will specify all providers to subfinder, ones with missing keys will just be skipped and free ones will be used.
 
 ## Usage
 
@@ -75,11 +98,19 @@ See [config.yaml](config/config.yaml.dist)
 - Run gorecon with cli args
 
 ```shell
-# -c is the company name 
-# -d is the base domain such as foo.bar or a file containing a list of domains.
-# -m is a file containing recon-ng modules you want to run
-# -n is a file containing CIDRs or IPs 
-# -o is the output directory you want the generated reports to go.
+  -c, --company string        company name that your testing
+      --creator string        report creator
+  -d, --domain string         domain string or file containing domains ex. domains.txt
+  -h, --help                  help for recon
+  -m, --modules string        list of recon-ng modules you want to run for domains and hosts
+  -n, --netblock string       CIDRs you wish to scan
+      --out-of-scope string   out of scope domains, IPs, or CIDRs
+  -o, --output string         output dir, defaults to ~/work
+  -w, --workspace string      workspace name, use one word
+```
+
+examples
+```shell
 ./gorecon recon -c COMPANY-NAME -d BASE-DOMAIN -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/work
 ./gorecon recon -c COMPANY-NAME -d domains.txt -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/work
 ```

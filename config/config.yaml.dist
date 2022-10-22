@@ -2,6 +2,7 @@ COMPANY: "TODO"
 CREATOR: "TODO"
 WORKSPACE: "TODO"
 OUTPUT: "/home/YOUR-USERNAME/work"
+SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
 DOMAIN: |-
   todo.foo
   www.todo.foo

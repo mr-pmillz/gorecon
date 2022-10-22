@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/projectdiscovery/httpx/runner"
+
+	"github.com/mr-pmillz/gorecon/localio"
 )
 
 // runHTTPX runs httpx against a slice of urls ...
@@ -38,6 +39,7 @@ func runHTTPX(urls []string, outputDir string) error {
 		Threads:            20,
 		OutputServerHeader: true,
 		LeaveDefaultPorts:  true,
+		Timeout:            30,
 	}
 	if err := options.ValidateOptions(); err != nil {
 		log.Fatal(err)
@@ -94,6 +96,7 @@ func runHTTPXOutputCSV(urls []string, outputDir string) (string, error) {
 		OutputLinesCount:   true,
 		OutputWordsCount:   true,
 		Asn:                true,
+		Timeout:            30,
 	}
 	if err := options.ValidateOptions(); err != nil {
 		log.Fatal(err)

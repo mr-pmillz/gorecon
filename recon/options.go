@@ -9,25 +9,27 @@ import (
 )
 
 type Options struct {
-	Company    string
-	Creator    string
-	Domain     interface{}
-	Modules    interface{}
-	NetBlock   interface{}
-	OutOfScope interface{}
-	Output     string
-	Workspace  string
+	Company                 string
+	Creator                 string
+	Domain                  interface{}
+	Modules                 interface{}
+	NetBlock                interface{}
+	OutOfScope              interface{}
+	Output                  string
+	Workspace               string
+	SubFinderProviderConfig string
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("company", "c", "", "company name that your testing")
-	cmd.PersistentFlags().StringP("creator", "", "BHIS", "report creator")
+	cmd.PersistentFlags().StringP("creator", "", "", "report creator")
 	cmd.PersistentFlags().StringP("domain", "d", "", "domain string or file containing domains ex. domains.txt")
 	cmd.PersistentFlags().StringP("modules", "m", "", "list of recon-ng modules you want to run for domains and hosts")
 	cmd.PersistentFlags().StringP("netblock", "n", "", "CIDRs you wish to scan")
 	cmd.PersistentFlags().StringP("workspace", "w", "", "workspace name, use one word")
-	cmd.PersistentFlags().StringP("output", "o", "~/work", "output dir, defaults to ~/work")
+	cmd.PersistentFlags().StringP("output", "o", "", "output dir, defaults to ~/work")
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
+	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
 	return nil
 }
 
@@ -41,6 +43,16 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Company = company.(string)
+
+	subfinderConfig, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
+		Flag:       "subfinder-keys-file",
+		IsFilePath: false,
+		Opts:       opts.SubFinderProviderConfig,
+	})
+	if err != nil {
+		return err
+	}
+	opts.SubFinderProviderConfig = subfinderConfig.(string)
 
 	domain, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "domain",

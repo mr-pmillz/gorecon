@@ -9,6 +9,11 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err := localio.PrettyPrint(h); err != nil {
 		return err
 	}
+	// run dnsrecon to start off with because hacking recon is fun :)
+	if err := runDNSRecon(h.Domains, opts.Output); err != nil {
+		return err
+	}
+
 	reports, err := h.RunReconNG(opts)
 	if err != nil {
 		return err
@@ -23,17 +28,19 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	subs, err := runSubfinder(reconNGScope.Domains, opts.Output)
-	if err != nil {
-		return err
-	}
-
 	var newBaseDomainsFound bool
 	for _, domain := range reconNGScope.Domains {
 		if !localio.Contains(h.Domains, domain) {
-			newBaseDomainsFound = true
-			h.Domains = append(h.Domains, domain)
+			if inScope := h.isDomainInScope(domain); inScope {
+				newBaseDomainsFound = true
+				h.Domains = append(h.Domains, domain)
+			}
 		}
+	}
+
+	subs, err := runSubfinder(h.Domains, opts)
+	if err != nil {
+		return err
 	}
 
 	var urls []string
@@ -75,8 +82,6 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	// TODO: Run Nuclei with templates/* against all found responsive URLs from httpx output
-	// TODO: incorporate URLCrazy, DNSRecon
 	// TODO: run Naabu to find open ports. Feed open ports to Nmap to verify service versions
 	return nil
 }
