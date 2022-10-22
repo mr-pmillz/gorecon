@@ -114,8 +114,7 @@ func TimeTrack(start time.Time, name string) {
 // it returns an error
 func RunCommandPipeOutput(command string) error {
 	defer TimeTrack(time.Now(), command)
-	PrintInfo("Command", command, "Running Command [+]")
-	LogInfo("Command", command, "Running Command ")
+	LogInfo("Command", command, "")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return err

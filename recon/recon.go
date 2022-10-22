@@ -2,6 +2,7 @@ package recon
 
 import (
 	"github.com/mr-pmillz/gorecon/localio"
+	"os"
 )
 
 func (h *Hosts) RunAllRecon(opts *Options) error {
@@ -42,6 +43,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err != nil {
 		return err
 	}
+	os.Exit(0)
 
 	var urls []string
 	if newBaseDomainsFound {

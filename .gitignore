@@ -17,3 +17,4 @@ todo.txt
 gorecon
 *.txt
 config/testconfig.yaml
+gorecon-command-log.json

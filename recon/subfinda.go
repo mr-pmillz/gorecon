@@ -17,17 +17,16 @@ import (
 func runSubfinder(domains []string, opts *Options) ([]string, error) {
 	for _, domain := range domains {
 		runnerInstance, err := runner.NewRunner(&runner.Options{
-			Threads:            20,                       // Thread controls the number of threads to use for active enumerations
-			Timeout:            30,                       // Timeout is the seconds to wait for sources to respond
-			MaxEnumerationTime: 10,                       // MaxEnumerationTime is the maximum amount of time in mins to wait for enumeration
-			Resolvers:          resolve.DefaultResolvers, // Use the default list of resolvers by marshaling it to the config
-			// Sources:          []string{"alienvault", "dnsdumpster", "hackertarget", "crtsh"}, // Sources contains a comma-separated list of sources to use for enumeration
-			All:            true,                         // All specifies whether to use all (slow) sources.
-			ProviderConfig: opts.SubFinderProviderConfig, // ProviderConfig contains the location of the provider config file
-			OnlyRecursive:  false,                        // Recursive specifies whether to use only recursive subdomain enumeration sources
-			Silent:         false,                        // Silent suppresses any extra text and only writes subdomains to screen
-			Verbose:        true,                         // Verbose flag indicates whether to show verbose output or not
-			NoColor:        false,                        // NoColor disables the colored output
+			Threads:            20,                           // Thread controls the number of threads to use for active enumerations
+			Timeout:            30,                           // Timeout is the seconds to wait for sources to respond
+			MaxEnumerationTime: 10,                           // MaxEnumerationTime is the maximum amount of time in mins to wait for enumeration
+			Resolvers:          resolve.DefaultResolvers,     // Use the default list of resolvers by marshaling it to the config
+			All:                true,                         // All specifies whether to use all (slow) sources.
+			ProviderConfig:     opts.SubFinderProviderConfig, // ProviderConfig contains the location of the provider config file
+			OnlyRecursive:      false,                        // Recursive specifies whether to use only recursive subdomain enumeration sources
+			Silent:             false,                        // Silent suppresses any extra text and only writes subdomains to screen
+			Verbose:            true,                         // Verbose flag indicates whether to show verbose output or not
+			NoColor:            false,                        // NoColor disables the colored output
 		})
 		if err != nil {
 			log.Fatal(err)
