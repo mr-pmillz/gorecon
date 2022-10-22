@@ -2,7 +2,6 @@ package recon
 
 import (
 	"github.com/mr-pmillz/gorecon/localio"
-	"os"
 )
 
 func (h *Hosts) RunAllRecon(opts *Options) error {
@@ -43,7 +42,6 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err != nil {
 		return err
 	}
-	os.Exit(0)
 
 	var urls []string
 	if newBaseDomainsFound {
@@ -84,6 +82,5 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	// TODO: run Naabu to find open ports. Feed open ports to Nmap to verify service versions
 	return nil
 }
