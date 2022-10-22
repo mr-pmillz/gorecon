@@ -46,7 +46,7 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 
 	subfinderConfig, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "subfinder-keys-file",
-		IsFilePath: false,
+		IsFilePath: true,
 		Opts:       opts.SubFinderProviderConfig,
 	})
 	if err != nil {
