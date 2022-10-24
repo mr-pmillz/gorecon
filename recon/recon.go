@@ -82,5 +82,8 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
+	// ToDo: add Content Discovery Command
+	// ToDo: run hakrawler on responsive urls through burp
+	// hakrawler -u -timeout 15 -insecure -subs -proxy http://localhost:8080
 	return nil
 }

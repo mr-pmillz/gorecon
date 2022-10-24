@@ -23,11 +23,11 @@ Table of Contents
 
 This project was built to automate various repetitive tasks for external recon gathering.
 Currently, runs the following tools in this order
-1. dnsrecon
-2. recon-ng
-3. subfinder
-4. httpx
-5. gowitness
+1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
+2. [recon-ng](https://github.com/lanmaster53/recon-ng)
+3. [subfinder](https://github.com/projectdiscovery/subfinder)
+4. [httpx](https://github.com/projectdiscovery/httpx)
+5. [gowitness](https://github.com/sensepost/gowitness)
 
 ## Future Feature Presentation
 
@@ -57,7 +57,7 @@ ensure netblock ips are in IPv4 CIDR range formats. For a single ip, you would u
 cp config/config.yaml.dist config.yaml
 ```
 
-For best results, ensure you add your api keys to recon-ng, at the very least, the free ones.
+For best results, ensure you add your api keys to recon-ng.
 Can also add api keys file path to subfinder via config.yaml.
 For example
 ```yaml
