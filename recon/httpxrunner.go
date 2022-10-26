@@ -2,10 +2,8 @@ package recon
 
 import (
 	"fmt"
-	"log"
-	"os"
-
 	"github.com/projectdiscovery/httpx/runner"
+	"log"
 
 	"github.com/mr-pmillz/gorecon/localio"
 )
@@ -109,13 +107,7 @@ func runHTTPXOutputCSV(urls []string, outputDir string) (string, error) {
 	defer httpxRunner.Close()
 
 	localio.PrintInfo("Httpx", "CSV", "Httpx Generating CSV File")
-	temp := os.Stdout
-	temperr := os.Stderr
-	os.Stdout = nil
-	os.Stderr = nil
 	httpxRunner.RunEnumeration()
-	os.Stdout = temp
-	os.Stderr = temperr
 
 	return fmt.Sprintf("%s/httpx-output.csv", outputDir), nil
 }
