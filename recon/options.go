@@ -18,7 +18,7 @@ type Options struct {
 	Output                  string
 	Workspace               string
 	SubFinderProviderConfig string
-	RunDnsRecon             bool
+	RunDNSRecon             bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -46,11 +46,11 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	}
 	opts.Company = company.(string)
 
-	cmdDnsRecon, err := cmd.Flags().GetBool("run-dnsrecon")
+	cmdDNSRecon, err := cmd.Flags().GetBool("run-dnsrecon")
 	if err != nil {
 		return err
 	}
-	opts.RunDnsRecon = cmdDnsRecon
+	opts.RunDNSRecon = cmdDNSRecon
 
 	subfinderConfig, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "subfinder-keys-file",

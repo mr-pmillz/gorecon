@@ -10,7 +10,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 	// run dnsrecon to start off with because hacking recon is fun :)
-	if opts.RunDnsRecon {
+	if opts.RunDNSRecon {
 		if err := runDNSRecon(h.Domains, opts.Output); err != nil {
 			return err
 		}
