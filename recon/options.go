@@ -18,6 +18,7 @@ type Options struct {
 	Output                  string
 	Workspace               string
 	SubFinderProviderConfig string
+	RunDnsRecon             bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -30,6 +31,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("output", "o", "", "output dir, defaults to ~/work")
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
+	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
 	return nil
 }
 
@@ -43,6 +45,12 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Company = company.(string)
+
+	cmdDnsRecon, err := cmd.Flags().GetBool("run-dnsrecon")
+	if err != nil {
+		return err
+	}
+	opts.RunDnsRecon = cmdDnsRecon
 
 	subfinderConfig, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "subfinder-keys-file",
