@@ -37,17 +37,28 @@ type PublicGitMembers struct {
 	LoginName        []string
 }
 
-// GetPublicRepoURLs returns a slice of public repo URLs
-func (c *GitHubClient) GetPublicRepoURLs(organization string) (*PublicGitInfo, error) {
+func (c *GitHubClient) GetAllOrgMemberRepoURLs(members []string) (*PublicGitInfo, error) {
 	p := &PublicGitInfo{}
-	repos, err := c.ListPublicOrgRepos(organization)
+	for _, member := range members {
+		memberRepos, err := c.GetPublicOrgUserRepoURLs(member)
+		if err != nil {
+			return nil, localio.LogError(err)
+		}
+		p.orgUserHTTPSCloneURLs = append(p.orgUserHTTPSCloneURLs, memberRepos.orgUserHTTPSCloneURLs...)
+	}
+
+	return p, nil
+}
+
+// GetPublicOrgUserRepoURLs returns a slice of public repo URLs
+func (c *GitHubClient) GetPublicOrgUserRepoURLs(username string) (*PublicGitInfo, error) {
+	p := &PublicGitInfo{}
+	repos, err := c.ListPublicUserRepos(username)
 	if err != nil {
 		return nil, localio.LogError(err)
 	}
-	var repoURLs []string
 	for _, repo := range repos {
-		repoURLs = append(repoURLs, *repo.CloneURL)
-		p.orgHTTPSCloneURLs = append(p.orgHTTPSCloneURLs, *repo.CloneURL)
+		p.orgUserHTTPSCloneURLs = append(p.orgUserHTTPSCloneURLs, *repo.CloneURL)
 	}
 	return p, nil
 }
@@ -74,6 +85,19 @@ func (c *GitHubClient) ListPublicUserRepos(username string) ([]*github.Repositor
 	}
 
 	return allRepos, nil
+}
+
+// GetPublicOrgRepoURLs returns a slice of public repo URLs
+func (c *GitHubClient) GetPublicOrgRepoURLs(organization string) (*PublicGitInfo, error) {
+	p := &PublicGitInfo{}
+	repos, err := c.ListPublicOrgRepos(organization)
+	if err != nil {
+		return nil, localio.LogError(err)
+	}
+	for _, repo := range repos {
+		p.orgHTTPSCloneURLs = append(p.orgHTTPSCloneURLs, *repo.CloneURL)
+	}
+	return p, nil
 }
 
 func (c *GitHubClient) ListPublicOrgRepos(organization string) ([]*github.Repository, error) {
@@ -142,12 +166,18 @@ func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
 }
 
 // GetPublicOrgMembers ...
-func GetPublicOrgMembers(users []*github.User) []string {
-	var orgUsers []string
-	for _, user := range users {
-		orgUsers = append(orgUsers, *user.Login)
+func (c *GitHubClient) GetPublicOrgMembers(organization string) (*PublicGitInfo, error) {
+	p := &PublicGitInfo{}
+	members, err := c.ListPublicMembers(organization)
+	if err != nil {
+		return nil, localio.LogError(err)
 	}
-	return orgUsers
+
+	for _, member := range members {
+		p.Members.LoginName = append(p.Members.LoginName, *member.Login)
+		p.Members.GitHubProfileURL = append(p.Members.GitHubProfileURL, *member.HTMLURL)
+	}
+	return p, nil
 }
 
 func (c *GitHubClient) ListPublicMembers(organization string) ([]*github.User, error) {

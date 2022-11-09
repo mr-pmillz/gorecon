@@ -1,6 +1,9 @@
 package srctleaks
 
-import "github.com/mr-pmillz/gorecon/localio"
+import (
+	"fmt"
+	"github.com/mr-pmillz/gorecon/localio"
+)
 
 func Run(opts *Options) error {
 	client := newClient(opts)
@@ -9,21 +12,32 @@ func Run(opts *Options) error {
 		return localio.LogError(err)
 	}
 	if organization != "" {
-		pubGitInfo, err := client.GetPublicRepoURLs(organization)
+		pubGitInfo, err := client.GetPublicOrgRepoURLs(organization)
 		if err != nil {
 			return localio.LogError(err)
 		}
 
-		members, err := client.ListPublicMembers(organization)
+		members, err := client.GetPublicOrgMembers(organization)
 		if err != nil {
 			return localio.LogError(err)
 		}
-		for _, member := range members {
-			pubGitInfo.Members.LoginName = append(pubGitInfo.Members.LoginName, member.Login)
-			pubGitInfo.Members.GitHubProfileURL = append(pubGitInfo.Members.GitHubProfileURL, member.HTMLURL)
+		pubGitInfo.Members = members.Members
+
+		orgMemberRepoURLs, err := client.GetAllOrgMemberRepoURLs(pubGitInfo.Members.LoginName)
+		if err != nil {
+			return localio.LogError(err)
 		}
-		if err = localio.PrettyPrint(pubGitInfo); err != nil {
-			return err
+		pubGitInfo.orgUserHTTPSCloneURLs = orgMemberRepoURLs.orgUserHTTPSCloneURLs
+
+		// write found data to json file
+		if err = localio.WriteStructToJSONFile(pubGitInfo, fmt.Sprintf("%s/public-organization-gitinfo.json", opts.Output)); err != nil {
+			return localio.LogError(err)
+		}
+
+		// runGitLeaks
+		localio.LogInfo("GitLeaks", "Running GitLeaks", fmt.Sprintf("found: %d organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
+		if err = runGitLeaks(pubGitInfo.orgHTTPSCloneURLs, opts); err != nil {
+			return localio.LogError(err)
 		}
 	}
 	return nil

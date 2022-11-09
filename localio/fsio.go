@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -197,6 +198,19 @@ func RunCommandsPipeOutput(commands []string) error {
 		if err := RunCommandPipeOutput(c); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// WriteStructToJSONFile ...
+func WriteStructToJSONFile(data interface{}, outputFile string) error {
+	f, err := json.MarshalIndent(data, "", "2")
+	if err != nil {
+		return LogError(err)
+	}
+
+	if err = ioutil.WriteFile(outputFile, f, 0600); err != nil {
+		return LogError(err)
 	}
 	return nil
 }
