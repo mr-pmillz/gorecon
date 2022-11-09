@@ -30,15 +30,22 @@ func Run(opts *Options) error {
 		pubGitInfo.orgUserHTTPSCloneURLs = orgMemberRepoURLs.orgUserHTTPSCloneURLs
 
 		// write found data to json file
-		if err = localio.WriteStructToJSONFile(pubGitInfo, fmt.Sprintf("%s/public-organization-gitinfo.json", opts.Output)); err != nil {
+		if err = localio.WriteStructToJSONFile(pubGitInfo, fmt.Sprintf("%s/company-repos/public-organization-gitinfo.json", opts.Output)); err != nil {
 			return localio.LogError(err)
 		}
 
 		// runGitLeaks
-		localio.LogInfo("GitLeaks", "Running GitLeaks", fmt.Sprintf("found: %d organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
+		localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against %s", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
 		if err = runGitLeaks(pubGitInfo.orgHTTPSCloneURLs, opts); err != nil {
 			return localio.LogError(err)
 		}
+
+		// ToDo: Run against all Organization Users, Might take a while. Make this optional.. ToDo
+		// Uncomment this line to do just that
+		// localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against all %s users!", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
+		// if err = runGitLeaks(pubGitInfo.orgUserHTTPSCloneURLs, opts); err != nil {
+		//	 return localio.LogError(err)
+		// }
 	}
 	return nil
 }

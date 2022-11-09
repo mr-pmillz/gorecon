@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/projectdiscovery/gologger"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
+	"github.com/zricethezav/gitleaks/v8/config"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"os"
@@ -18,6 +22,8 @@ var gitLeaksConfigDir embed.FS
 // runGitLeaks clones discovered organization repos and runs gitleaks against them.
 // runGitLeaks will remove any repos which do not contain secrets.
 func runGitLeaks(repos []string, opts *Options) error {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	cloneDir := fmt.Sprintf("%s/company-repos", opts.Output)
 	if exists, err := localio.Exists(cloneDir); err == nil && !exists {
 		if err = os.MkdirAll(cloneDir, 0750); err != nil {
@@ -33,28 +39,23 @@ func runGitLeaks(repos []string, opts *Options) error {
 	}
 
 	var (
-		//vc       config.ViperConfig
+		vc       config.ViperConfig
 		findings []report.Finding
 	)
 
 	//// Load config
-	//if err = viper.Unmarshal(&vc); err != nil {
-	//	localio.LogFatal(err, "Failed to load config")
-	//}
-	//cfg, err := vc.Translate()
-	//if err != nil {
-	//	localio.LogFatal(err, "Failed to load config")
-	//}
-	cfgPath := "/tmp/.gitleaks.toml"
+	if err = viper.Unmarshal(&vc); err != nil {
+		localio.LogFatal(err, "Failed to load config")
+	}
+	cfg, err := vc.Translate()
+	if err != nil {
+		localio.LogFatal(err, "Failed to load config")
+	}
+	cfg.Path = "/tmp/.gitleaks.toml"
 	start := time.Now()
 
-	//detector := detect.NewDetector(cfg)
-	detector, err := detect.NewDetectorDefaultConfig()
-	if err != nil {
-		return localio.LogError(err)
-	}
+	detector := detect.NewDetector(cfg)
 	detector.Verbose = true
-	detector.Config.Path = cfgPath
 
 	for _, repo := range repos {
 		repoName := strings.ReplaceAll(strings.Split(repo, "/")[len(strings.Split(repo, "/"))-1], ".git", "")
@@ -68,19 +69,19 @@ func runGitLeaks(repos []string, opts *Options) error {
 			return localio.LogError(err)
 		}
 		// log info about the scan
-		localio.LogInfo("Gitleaks", repoName, fmt.Sprintf("scan completed in %s", FormatDuration(time.Since(start))))
+		localio.PrintInfo("RepositoryURL", repo, fmt.Sprintf("scan completed in %s", FormatDuration(time.Since(start))))
 		if len(findings) != 0 {
-			localio.LogWarning("Gitleaks Findings", repoName, fmt.Sprintf("leaks found: %d", len(findings)))
+			localio.LogWarning("RepositoryName", repoName, fmt.Sprintf("leaks found: %d", len(findings)))
 			// write report output json
-			if err = report.Write(findings, detector.Config, "json", fmt.Sprintf("%s/%s.json", cloneDir, repoName)); err != nil {
+			if err = report.Write(findings, cfg, "json", fmt.Sprintf("%s/%s.json", cloneDir, repoName)); err != nil {
 				return localio.LogError(err)
 			}
 			// write report output csv
-			if err = report.Write(findings, detector.Config, "csv", fmt.Sprintf("%s/%s.csv", cloneDir, repoName)); err != nil {
+			if err = report.Write(findings, cfg, "csv", fmt.Sprintf("%s/%s.csv", cloneDir, repoName)); err != nil {
 				return localio.LogError(err)
 			}
 		} else {
-			localio.LogInfo("Gitleaks Findings", repoName, "no leaks found, removing repository")
+			localio.PrintInfo("RepositoryPath", repoPath, "no leaks found, removing repository")
 			if err = os.RemoveAll(repoPath); err != nil {
 				return localio.LogError(err)
 			}
@@ -94,7 +95,7 @@ func FormatDuration(d time.Duration) string {
 	scale := 100 * time.Second
 	// look for the max scale that is smaller than d
 	for scale > d {
-		scale = scale / 10
+		scale /= 10
 	}
 	return d.Round(scale / 100).String()
 }

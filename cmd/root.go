@@ -25,7 +25,7 @@ const (
 var RootCmd = &cobra.Command{
 	Use:   "gorecon",
 	Short: "External recon automation tool",
-	Long:  `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon! TODO`,
+	Long:  `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!`,
 }
 
 func init() {

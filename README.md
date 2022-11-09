@@ -72,7 +72,7 @@ By default, gorecon will specify all providers to subfinder, ones with missing k
 Gorecon supports yaml configuration files along with cli arguments. Cli args should override values in the configuration file.
 
 ```shell
-External recon automation tool
+Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!
 
 Usage:
   gorecon [command]
@@ -81,6 +81,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   recon       Run recon enumeration
+  srctleaks   GitHub Public Repo OSINT
 
 Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
@@ -95,23 +96,25 @@ See [config.yaml](config/config.yaml.dist)
 ```shell
 ./gorecon recon --config config.yaml
 ```
+## srctleaks
 
-- Run gorecon with cli args
+Find Public GitHub Organization for the Company specified in your config.yaml.
+Runs [GitLeaks](https://github.com/zricethezav/gitleaks) natively in golang against all identified Public Repos
+Also logs Repos and Organization Users to a file and removes repos with no found secrets.
 
 ```shell
+Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets
+
+Usage:
+  gorecon srctleaks [flags]
+
+Flags:
   -c, --company string        company name that your testing
-      --creator string        report creator
   -d, --domain string         domain string or file containing domains ex. domains.txt
-  -h, --help                  help for recon
-  -m, --modules string        list of recon-ng modules you want to run for domains and hosts
-  -n, --netblock string       CIDRs you wish to scan
-      --out-of-scope string   out of scope domains, IPs, or CIDRs
-  -o, --output string         output dir, defaults to ~/work
-  -w, --workspace string      workspace name, use one word
-```
+      --github-token string   github personal access token for github API interaction
+  -h, --help                  help for srctleaks
+  -o, --output string         report output dir
 
-examples
-```shell
-./gorecon recon -c COMPANY-NAME -d BASE-DOMAIN -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/target-output
-./gorecon recon -c COMPANY-NAME -d domains.txt -m modules.txt -w WORKSPACE-NAME -n netblocks.txt -o ~/target-output
+Global Flags:
+      --config string   config file (default is APP_ROOT/config/config.yaml
 ```

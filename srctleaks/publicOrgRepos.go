@@ -75,7 +75,7 @@ func (c *GitHubClient) ListPublicUserRepos(username string) ([]*github.Repositor
 			return nil, localio.LogError(err)
 		}
 		if resp.TokenExpiration.IsZero() {
-			localio.LogInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
+			localio.PrintInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -112,7 +112,7 @@ func (c *GitHubClient) ListPublicOrgRepos(organization string) ([]*github.Reposi
 			return nil, localio.LogError(err)
 		}
 		if resp.TokenExpiration.IsZero() {
-			localio.LogInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
+			localio.PrintInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -148,7 +148,7 @@ func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
 		return "", localio.LogError(err)
 	}
 	if resp.TokenExpiration.IsZero() {
-		localio.LogInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
+		localio.PrintInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
 	}
 
 	for _, user := range users.Users {
@@ -158,7 +158,7 @@ func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
 	}
 
 	if len(matchedUsers) >= 1 {
-		localio.LogInfo("GitHub Organization", matchedUsers[0], "Found Public GitHub Organization!")
+		localio.PrintInfo("GitHub Organization", matchedUsers[0], "Found Public GitHub Organization!")
 		return matchedUsers[0], nil
 	}
 
@@ -195,7 +195,7 @@ func (c *GitHubClient) ListPublicMembers(organization string) ([]*github.User, e
 			return nil, localio.LogError(err)
 		}
 		if resp.TokenExpiration.IsZero() {
-			localio.LogInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
+			localio.PrintInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
 		}
 		allMembers = append(allMembers, members...)
 		if resp.NextPage == 0 {

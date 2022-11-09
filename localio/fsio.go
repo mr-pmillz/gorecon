@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -204,12 +203,12 @@ func RunCommandsPipeOutput(commands []string) error {
 
 // WriteStructToJSONFile ...
 func WriteStructToJSONFile(data interface{}, outputFile string) error {
-	f, err := json.MarshalIndent(data, "", "2")
+	f, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return LogError(err)
 	}
 
-	if err = ioutil.WriteFile(outputFile, f, 0600); err != nil {
+	if err = os.WriteFile(outputFile, f, 0600); err != nil {
 		return LogError(err)
 	}
 	return nil
@@ -217,7 +216,8 @@ func WriteStructToJSONFile(data interface{}, outputFile string) error {
 
 // LogInfo logs to a json file
 func LogInfo(key, val, msg string) {
-	fname := "gorecon-command-log.json"
+	timestamp := time.Now().Format("01-02-2006")
+	fname := fmt.Sprintf("gorecon-command-log-%s.json", timestamp)
 
 	f, err := os.OpenFile(fname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -237,19 +237,19 @@ func LogWarning(key, val, msg string) {
 
 // PrintInfo is a wrapper around gologger Info method
 func PrintInfo(key, val, msg string) {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelInfo)
 	gologger.Info().Str(key, val).Msg(msg)
 }
 
 func LogError(err error) error {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelError)
 	gologger.Error()
 	return err
 }
 
 // LogFatal is a wrapper around gologger Info method
 func LogFatal(err error, msg string) {
-	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelFatal)
 	gologger.Debug().Str("Error", err.Error()).Msg(msg)
 	gologger.Fatal()
 }
@@ -281,18 +281,6 @@ func PrettyPrint(v interface{}) (err error) {
 	}
 	return
 }
-
-// WriteStructToFile writes a struct to an output json file
-// func WriteStructToFile(v interface{}, jsonOutputFilePath string) error {
-//	data, err := json.MarshalIndent(v, "", "  ")
-//	if err != nil {
-//		return err
-//	}
-//	if err = ioutil.WriteFile(jsonOutputFilePath, data, 0644); err != nil { //nolint:gosec
-//		return err
-//	}
-//	return nil
-// }
 
 // ResolveAbsPath ...
 func ResolveAbsPath(path string) (string, error) {
