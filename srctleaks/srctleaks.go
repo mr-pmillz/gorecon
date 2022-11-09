@@ -41,7 +41,7 @@ func Run(opts *Options) error {
 		}
 
 		// ToDo: Run against all Organization Users, Might take a while. Make this optional.. ToDo
-		// Uncomment this line to do just that
+		// Uncomment these lines to do that
 		// localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against all %s users!", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
 		// if err = runGitLeaks(pubGitInfo.orgUserHTTPSCloneURLs, opts); err != nil {
 		//	 return localio.LogError(err)
