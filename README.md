@@ -23,12 +23,15 @@ Table of Contents
 ## About
 
 This project was built to automate various repetitive tasks for external recon gathering.
-Currently, runs the following tools in this order
+Currently, the recon sub command runs the following tools in this order
 1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
 2. [recon-ng](https://github.com/lanmaster53/recon-ng)
 3. [subfinder](https://github.com/projectdiscovery/subfinder)
 4. [httpx](https://github.com/projectdiscovery/httpx)
 5. [gowitness](https://github.com/sensepost/gowitness)
+
+The srctleaks sub command discovers public organization repositories and users.
+Then [GitLeaks](https://github.com/zricethezav/gitleaks) is run against all found public repositories.
 
 ## Future Feature Presentation
 
@@ -40,6 +43,7 @@ As an optional feature ToDo:
 
   * [gorecon](docs/gorecon.md)                         - Automate external recon.
   * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
+  * [gorecon srctleaks](docs/gorecon_srctleaks.md)     - Run Gitleaks against discovered public organization repositories.
 
 ## Installation
 
