@@ -3,6 +3,7 @@ CREATOR: "TODO"
 WORKSPACE: "TODO"
 OUTPUT: "/home/YOUR-USERNAME/work"
 SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
+GITHUB_TOKEN: "TODO"
 DOMAIN: |-
   todo.foo
   www.todo.foo

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -57,6 +58,31 @@ func ContainsChars(s []string, str string) bool {
 	}
 
 	return Contains(s, str)
+}
+
+// EmbedFileCopy ...
+func EmbedFileCopy(src fs.File, dst string) error {
+	destFilePath, err := ResolveAbsPath(dst)
+	if err != nil {
+		return err
+	}
+
+	if exists, err := Exists(filepath.Dir(destFilePath)); err == nil && !exists {
+		if err = os.MkdirAll(filepath.Dir(destFilePath), 0750); err != nil {
+			return err
+		}
+	}
+
+	destFile, err := os.Create(destFilePath)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(destFile, src); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Exists returns whether the given file or directory exists
@@ -187,6 +213,12 @@ func LogInfo(key, val, msg string) {
 	teeformatter := formatter.NewTee(formatter.NewCLI(false), f)
 	gologger.DefaultLogger.SetFormatter(teeformatter)
 	gologger.Info().Str(key, val).Msg(msg)
+}
+
+// LogWarning logs a warning to stdout
+func LogWarning(key, val, msg string) {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelWarning)
+	gologger.Warning().Str(key, val).Msg(msg)
 }
 
 // PrintInfo is a wrapper around gologger Info method

@@ -28,7 +28,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("modules", "m", "", "list of recon-ng modules you want to run for domains and hosts")
 	cmd.PersistentFlags().StringP("netblock", "n", "", "CIDRs you wish to scan")
 	cmd.PersistentFlags().StringP("workspace", "w", "", "workspace name, use one word")
-	cmd.PersistentFlags().StringP("output", "o", "", "output dir, defaults to ~/work")
+	cmd.PersistentFlags().StringP("output", "o", "", "report output dir")
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
 	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
