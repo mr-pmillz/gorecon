@@ -8,31 +8,42 @@ DOMAIN: |-
   todo.foo
   www.todo.foo
 MODULES: |-
-  recon/companies-contacts/censys_email_address
-  recon/contacts-credentials/hibp_breach
-  recon/contacts-credentials/hibp_paste
-  recon/companies-multi/whois_miner
-  recon/domains-contacts/whois_pocs
-  recon/domains-contacts/hunter_io
-  recon/domains-hosts/hackertarget
+  recon/domains-hosts/bing_domain_api
   recon/domains-hosts/bing_domain_web
   recon/domains-hosts/brute_hosts
   recon/domains-hosts/certificate_transparency
   recon/domains-hosts/google_site_web
+  recon/domains-hosts/hackertarget
   recon/domains-hosts/mx_spf_ip
   recon/domains-hosts/netcraft
   recon/domains-hosts/shodan_hostname
   recon/domains-hosts/ssl_san
   recon/domains-vulnerabilities/xssed
+  recon/hosts-hosts/bing_ip
   recon/hosts-hosts/resolve
   recon/hosts-hosts/reverse_resolve
   recon/hosts-hosts/ssltools
   recon/hosts-ports/shodan_ip
+  recon/netblocks-companies/censys_netblock_company
   recon/netblocks-hosts/reverse_resolve
+  recon/domains-companies/censys_companies
+  recon/domains-contacts/hunter_io
+  recon/domains-contacts/metacrawler
+  recon/domains-contacts/pgp_search
+  recon/domains-contacts/whois_pocs
+  recon/domains-contacts/wikileaker
+  recon/companies-contacts/bing_linkedin_cache
+  recon/companies-contacts/censys_email_address
+  recon/companies-multi/whois_miner
+  recon/contacts-domains/censys_email_to_domains
+  recon/profiles-contacts/bing_linkedin_contacts
+  recon/contacts-profiles/fullcontact
   reporting/csv
   reporting/html
+  reporting/list
 NETBLOCK: |-
   XXX.XX.XX.X/24
 OUT_OF_SCOPE: |-
-  XXX.XX.XX.X/32
+  XXX.XX.XX.XXX
+  outofscope.todo.foo
   outofscope.foo.bar.todo.blah

@@ -106,6 +106,12 @@ See [config.yaml](config/config.yaml.dist)
 Find Public GitHub Organization for the Company specified in your config.yaml.
 Runs [GitLeaks](https://github.com/zricethezav/gitleaks) natively in golang against all identified Public Repos
 Also logs Repos and Organization Users to a file and removes repos with no found secrets.
+Initial proof of concept. checks for GitHub Organization based upon COMPANY arg / config.yaml key
+
+- Checks against primary base domain without .tld to match GitHub Organization name. Works for some companies but not a catch all.
+  - Example, Company name = Example & Domain = example.com this would match as company name is transformed to lowercase.
+- **TL:DR**
+You might want to search GitHub manually for the org and then specify -c and -d flags accordingly
 
 ```shell
 Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets

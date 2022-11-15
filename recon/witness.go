@@ -8,7 +8,7 @@ import (
 )
 
 // runGoWitness installs the latest version and runs goWitness
-func runGoWitness(URLsFile, outputDir string) error {
+func runGoWitness(urlsFile, outputDir string) error {
 	// install the latest version of goWitness
 	// TODO: Run GoWitness Natively in Go...
 	if err := localio.RunCommandPipeOutput("go install github.com/sensepost/gowitness@latest"); err != nil {
@@ -23,7 +23,7 @@ func runGoWitness(URLsFile, outputDir string) error {
 			return err
 		}
 
-		if err := localio.RunCommandPipeOutput(fmt.Sprintf("%s file -f %s --screenshot-path %s --db-path %s -t 20", gowitness, URLsFile, goWitnessDir, goWitnessDB)); err != nil {
+		if err := localio.RunCommandPipeOutput(fmt.Sprintf("%s file -f %s --screenshot-path %s --db-path %s -t 20", gowitness, urlsFile, goWitnessDir, goWitnessDB)); err != nil {
 			return err
 		}
 

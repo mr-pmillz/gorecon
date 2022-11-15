@@ -8,15 +8,15 @@ import (
 //	"github.com/projectdiscovery/katana/pkg/engine/standard"
 //	"github.com/projectdiscovery/katana/pkg/types"
 
-func todo() {
-	fmt.Println(`1awaiting fix for 
+//nolint:all
+func todo(opts *Options) {
+	fmt.Println(`awaiting fix for 
 # github.com/projectdiscovery/subfinder/v2/pkg/subscraping
-../../go/pkg/mod/github.com/projectdiscovery/subfinder/v2@v2.5.4/pkg/subscraping/agent.go:49:61: cannot use rateLimit (variable of type int) as type int64 in argument to ratelimit.New
-`)
+../../go/pkg/mod/github.com/projectdiscovery/subfinder/v2@v2.5.4/pkg/subscraping/agent.go:49:61: cannot use rateLimit (variable of type int) as type int64 in argument to ratelimit.New`)
 }
 
 //// runKatana ...
-//func runKatana(URLsFile string, opts *Options) error {
+// func runKatana(URLsFile string, opts *Options) error {
 //	outOfScope, err := getOutOfScope(opts.OutOfScope)
 //	if err != nil {
 //		return localio.LogError(err)
@@ -57,4 +57,4 @@ func todo() {
 //		}
 //	}
 //	return nil
-//}
+// }

@@ -24,6 +24,7 @@ type Hosts struct {
 }
 
 // getOutOfScope ...
+//nolint:all
 func getOutOfScope(OOScope interface{}) ([]string, error) {
 	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
 	outOfScopeType := reflect.TypeOf(OOScope)
@@ -146,7 +147,6 @@ func NewScope(opts *Options) (*Hosts, error) {
 					hosts.IPv6s = append(hosts.IPv6s, netblock)
 				}
 			}
-
 		}
 	case reflect.String:
 		// parse --netblock file into scope object
@@ -167,18 +167,15 @@ func NewScope(opts *Options) (*Hosts, error) {
 							hosts.IPv6s = append(hosts.IPv6s, netblock)
 						}
 					}
-
 				}
-			} else {
-				if !localio.Contains(hosts.OutOfScope, opts.NetBlock.(string)) {
-					switch {
-					case valid.IsCIDR(opts.NetBlock.(string)):
-						hosts.CIDRs = append(hosts.CIDRs, opts.NetBlock.(string))
-					case valid.IsIPv4(opts.NetBlock.(string)):
-						hosts.IPv4s = append(hosts.IPv4s, opts.NetBlock.(string))
-					case valid.IsIPv6(opts.NetBlock.(string)):
-						hosts.IPv6s = append(hosts.IPv6s, opts.NetBlock.(string))
-					}
+			} else if !localio.Contains(hosts.OutOfScope, opts.NetBlock.(string)) {
+				switch {
+				case valid.IsCIDR(opts.NetBlock.(string)):
+					hosts.CIDRs = append(hosts.CIDRs, opts.NetBlock.(string))
+				case valid.IsIPv4(opts.NetBlock.(string)):
+					hosts.IPv4s = append(hosts.IPv4s, opts.NetBlock.(string))
+				case valid.IsIPv6(opts.NetBlock.(string)):
+					hosts.IPv6s = append(hosts.IPv6s, opts.NetBlock.(string))
 				}
 			}
 		}
