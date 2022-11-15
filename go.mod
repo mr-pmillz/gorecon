@@ -12,6 +12,7 @@ require (
 	github.com/projectdiscovery/httpx v1.2.4
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/subfinder/v2 v2.5.4
+	github.com/rs/zerolog v1.26.1
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
@@ -126,7 +127,6 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
-	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect

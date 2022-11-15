@@ -16,5 +16,6 @@ coverage/*
 todo.txt
 gorecon
 *.txt
+gorecon-command-log*.json
 config/testconfig.yaml
 gorecon-command-log.json

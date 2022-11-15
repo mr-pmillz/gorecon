@@ -23,11 +23,61 @@ type Hosts struct {
 	OutOfScope []string
 }
 
+// getOutOfScope ...
+func getOutOfScope(OOScope interface{}) ([]string, error) {
+	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
+	outOfScopeType := reflect.TypeOf(OOScope)
+	switch outOfScopeType.Kind() {
+	case reflect.Slice:
+		for _, i := range OOScope.([]string) {
+			if !valid.IsCIDR(i) {
+				outOfScope = append(outOfScope, i)
+			}
+		}
+	case reflect.String:
+		if OOScope.(string) != "" {
+			if exists, err := localio.Exists(OOScope.(string)); exists && err == nil {
+				outOfScopes, err := localio.ReadLines(OOScope.(string))
+				if err != nil {
+					return nil, err
+				}
+				for _, i := range outOfScopes {
+					if !valid.IsCIDR(i) {
+						outOfScope = append(outOfScope, i)
+					}
+				}
+			} else {
+				outOfScope = append(outOfScope, OOScope.(string))
+			}
+		}
+	}
+
+	return outOfScope, nil
+}
+
 //nolint:gocognit
 //nolint:gocyclo
 func NewScope(opts *Options) (*Hosts, error) {
 	localio.PrintInfo("Company", opts.Company, "Generating External Scope Information")
 	hosts := new(Hosts)
+	outOfScopeType := reflect.TypeOf(opts.OutOfScope)
+	switch outOfScopeType.Kind() {
+	case reflect.Slice:
+		hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.([]string)...)
+	case reflect.String:
+		if opts.OutOfScope.(string) != "" {
+			if exists, err := localio.Exists(opts.OutOfScope.(string)); exists && err == nil {
+				outOfScopes, err := localio.ReadLines(opts.OutOfScope.(string))
+				if err != nil {
+					return nil, err
+				}
+				hosts.OutOfScope = append(hosts.OutOfScope, outOfScopes...)
+			} else {
+				hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.(string))
+			}
+		}
+	}
+
 	// check if domain arg is file, string, or a slice
 	rtd := reflect.TypeOf(opts.Domain)
 	switch rtd.Kind() {
@@ -36,10 +86,10 @@ func NewScope(opts *Options) (*Hosts, error) {
 			// check if CIDR, IPv4, IPv6, Subdomain, or primary domain
 			// this tld library expects http:// protocol | URL format so prepend it to domain
 			d, _ := tld.Parse(fmt.Sprintf("https://%s", domain))
-			if d.Subdomain != "" {
+			if d.Subdomain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
 				hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
 			}
-			if d.Domain != "" {
+			if d.Domain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 				if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 					hosts.Domains = append(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD))
 				}
@@ -57,12 +107,12 @@ func NewScope(opts *Options) (*Hosts, error) {
 				// check if CIDR, IPv4, IPv6, Subdomain, or primary domain
 				// this tld library expects http:// protocol | URL format so prepend it to domain
 				d, _ := tld.Parse(fmt.Sprintf("https://%s", domain))
-				if d.Subdomain != "" {
+				if d.Subdomain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
 					if !localio.Contains(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
 						hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
 					}
 				}
-				if d.Domain != "" {
+				if d.Domain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 					if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 						hosts.Domains = append(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD))
 					}
@@ -70,13 +120,12 @@ func NewScope(opts *Options) (*Hosts, error) {
 			}
 		} else {
 			d, _ := tld.Parse(fmt.Sprintf("https://%s", opts.Domain.(string)))
-			if d.Subdomain != "" {
-				hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
-				if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
-					hosts.Domains = append(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD))
+			if d.Subdomain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+				if !localio.Contains(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+					hosts.SubDomains = append(hosts.SubDomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
 				}
 			}
-			if d.Domain != "" {
+			if d.Domain != "" && !localio.Contains(hosts.OutOfScope, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 				if !localio.Contains(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD)) {
 					hosts.Domains = append(hosts.Domains, fmt.Sprintf("%s.%s", d.Domain, d.TLD))
 				}
@@ -87,14 +136,17 @@ func NewScope(opts *Options) (*Hosts, error) {
 	switch rtn.Kind() {
 	case reflect.Slice:
 		for _, netblock := range opts.NetBlock.([]string) {
-			switch {
-			case valid.IsCIDR(netblock):
-				hosts.CIDRs = append(hosts.CIDRs, netblock)
-			case valid.IsIPv4(netblock):
-				hosts.IPv4s = append(hosts.IPv4s, netblock)
-			case valid.IsIPv6(netblock):
-				hosts.IPv6s = append(hosts.IPv6s, netblock)
+			if !localio.Contains(hosts.OutOfScope, netblock) {
+				switch {
+				case valid.IsCIDR(netblock):
+					hosts.CIDRs = append(hosts.CIDRs, netblock)
+				case valid.IsIPv4(netblock):
+					hosts.IPv4s = append(hosts.IPv4s, netblock)
+				case valid.IsIPv6(netblock):
+					hosts.IPv6s = append(hosts.IPv6s, netblock)
+				}
 			}
+
 		}
 	case reflect.String:
 		// parse --netblock file into scope object
@@ -105,41 +157,29 @@ func NewScope(opts *Options) (*Hosts, error) {
 					return nil, err
 				}
 				for _, netblock := range netblocks {
+					if !localio.Contains(hosts.OutOfScope, netblock) {
+						switch {
+						case valid.IsCIDR(netblock):
+							hosts.CIDRs = append(hosts.CIDRs, netblock)
+						case valid.IsIPv4(netblock):
+							hosts.IPv4s = append(hosts.IPv4s, netblock)
+						case valid.IsIPv6(netblock):
+							hosts.IPv6s = append(hosts.IPv6s, netblock)
+						}
+					}
+
+				}
+			} else {
+				if !localio.Contains(hosts.OutOfScope, opts.NetBlock.(string)) {
 					switch {
-					case valid.IsCIDR(netblock):
-						hosts.CIDRs = append(hosts.CIDRs, netblock)
-					case valid.IsIPv4(netblock):
-						hosts.IPv4s = append(hosts.IPv4s, netblock)
-					case valid.IsIPv6(netblock):
-						hosts.IPv6s = append(hosts.IPv6s, netblock)
+					case valid.IsCIDR(opts.NetBlock.(string)):
+						hosts.CIDRs = append(hosts.CIDRs, opts.NetBlock.(string))
+					case valid.IsIPv4(opts.NetBlock.(string)):
+						hosts.IPv4s = append(hosts.IPv4s, opts.NetBlock.(string))
+					case valid.IsIPv6(opts.NetBlock.(string)):
+						hosts.IPv6s = append(hosts.IPv6s, opts.NetBlock.(string))
 					}
 				}
-			} else {
-				switch {
-				case valid.IsCIDR(opts.NetBlock.(string)):
-					hosts.CIDRs = append(hosts.CIDRs, opts.NetBlock.(string))
-				case valid.IsIPv4(opts.NetBlock.(string)):
-					hosts.IPv4s = append(hosts.IPv4s, opts.NetBlock.(string))
-				case valid.IsIPv6(opts.NetBlock.(string)):
-					hosts.IPv6s = append(hosts.IPv6s, opts.NetBlock.(string))
-				}
-			}
-		}
-	}
-	outOfScope := reflect.TypeOf(opts.OutOfScope)
-	switch outOfScope.Kind() {
-	case reflect.Slice:
-		hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.([]string)...)
-	case reflect.String:
-		if opts.OutOfScope.(string) != "" {
-			if exists, err := localio.Exists(opts.OutOfScope.(string)); exists && err == nil {
-				outOfScopes, err := localio.ReadLines(opts.OutOfScope.(string))
-				if err != nil {
-					return nil, err
-				}
-				hosts.OutOfScope = append(hosts.OutOfScope, outOfScopes...)
-			} else {
-				hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.(string))
 			}
 		}
 	}
@@ -380,7 +420,7 @@ func WriteHttpxURLsToFile(csvFilePath, outputDir string) (string, error) {
 	var urls []string //nolint:prealloc
 
 	for _, i := range data.HttpxData {
-		if i.StatusCode != 404 {
+		if i.StatusCode >= 200 && i.StatusCode < 500 && i.StatusCode != 404 {
 			urls = append(urls, i.URL)
 		}
 	}

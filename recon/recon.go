@@ -1,24 +1,25 @@
 package recon
 
 import (
+	"fmt"
 	"github.com/mr-pmillz/gorecon/localio"
 )
 
 func (h *Hosts) RunAllRecon(opts *Options) error {
 	localio.PrintInfo("GoRecon", opts.Company, "Running All Recon Modules!")
 	if err := localio.PrettyPrint(h); err != nil {
-		return err
+		return localio.LogError(err)
 	}
 	// run dnsrecon to start off with because hacking recon is fun :)
 	if opts.RunDNSRecon {
 		if err := runDNSRecon(h.Domains, opts.Output); err != nil {
-			return err
+			return localio.LogError(err)
 		}
 	}
 
 	reports, err := h.RunReconNG(opts)
 	if err != nil {
-		return err
+		return localio.LogError(err)
 	}
 
 	reconNGScope, err := ParseReconNGCSV(&CsvReportFiles{
@@ -27,7 +28,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		contacts: reports.contacts,
 	})
 	if err != nil {
-		return err
+		return localio.LogError(err)
 	}
 
 	var newBaseDomainsFound bool
@@ -42,7 +43,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 
 	subs, err := runSubfinder(h.Domains, opts)
 	if err != nil {
-		return err
+		return localio.LogError(err)
 	}
 
 	var urls []string
@@ -50,7 +51,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		localio.PrintInfo("Recon-ng", "Running Recon-ng", "New Base Domains found! Re-running recon-ng")
 		thoroughReports, err := h.ThoroughReconNG(opts)
 		if err != nil {
-			return err
+			return localio.LogError(err)
 		}
 		scope, err := ParseReconNGCSV(&CsvReportFiles{
 			hosts:    thoroughReports.hosts,
@@ -58,34 +59,46 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 			contacts: thoroughReports.contacts,
 		})
 		if err != nil {
-			return err
+			return localio.LogError(err)
 		}
 		urls, err = GenerateURLs(scope, h, subs)
 		if err != nil {
-			return err
+			return localio.LogError(err)
 		}
 	} else {
 		urls, err = GenerateURLs(reconNGScope, h, subs)
 		if err != nil {
-			return err
+			return localio.LogError(err)
 		}
+	}
+	if err = localio.WriteStructToJSONFile(h, fmt.Sprintf("%s/gorecon-scope.json", opts.Output)); err != nil {
+		return localio.LogError(err)
 	}
 
 	if err = runHTTPX(urls, opts.Output); err != nil {
-		return err
+		return localio.LogError(err)
 	}
 
 	outputCSV, err := runHTTPXOutputCSV(urls, opts.Output)
 	if err != nil {
+		return localio.LogError(err)
+	}
+
+	urlFile, err := WriteHttpxURLsToFile(outputCSV, opts.Output)
+	if err != nil {
 		return err
 	}
 
-	if err = runGoWitness(outputCSV, opts.Output); err != nil {
-		return err
+	// katana dependencies break subfinder.
+	// see issue https://github.com/projectdiscovery/subfinder/issues/703
+	// due to incompatibility with github.com/projectdiscovery/ratelimit@v0.0.1
+	// if err := runKatana(urlFile, opts); err != nil {
+	//	return localio.LogError(err)
+	// }
+
+	if err = runGoWitness(urlFile, opts.Output); err != nil {
+		return localio.LogError(err)
 	}
 
-	// ToDo: add Content Discovery Command
-	// ToDo: run hakrawler on responsive urls through burp
-	// hakrawler -u -timeout 15 -insecure -subs -proxy http://localhost:8080
 	return nil
 }
