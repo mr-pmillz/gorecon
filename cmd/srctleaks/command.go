@@ -3,6 +3,8 @@ package srctleaks
 import (
 	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/mr-pmillz/gorecon/srctleaks"
+	"github.com/projectdiscovery/gologger"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,13 @@ var Command = &cobra.Command{
 		if err = opts.LoadFromCommand(cmd); err != nil {
 			localio.LogFatal(err, "Could not load Command Opts")
 		}
+
+		if exists, err := localio.Exists(opts.srctleaksOptions.Output); err == nil && !exists {
+			if err = os.MkdirAll(opts.srctleaksOptions.Output, 0750); err != nil {
+				gologger.Fatal().Msgf("Could not mkdir %s\n", err)
+			}
+		}
+
 		if err = srctleaks.Run(&opts.srctleaksOptions); err != nil {
 			localio.LogFatal(err, "Could not run srctleaks.Run()")
 		}

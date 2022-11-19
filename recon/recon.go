@@ -5,6 +5,7 @@ import (
 	"github.com/mr-pmillz/gorecon/localio"
 )
 
+// RunAllRecon ...
 func (h *Hosts) RunAllRecon(opts *Options) error {
 	localio.PrintInfo("GoRecon", opts.Company, "Running All Recon Modules!")
 	if err := localio.PrettyPrint(h); err != nil {
@@ -26,7 +27,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		hosts:    reports.hosts,
 		ports:    reports.ports,
 		contacts: reports.contacts,
-	})
+	}, h.OutOfScope)
 	if err != nil {
 		return localio.LogError(err)
 	}
@@ -57,7 +58,7 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 			hosts:    thoroughReports.hosts,
 			ports:    thoroughReports.ports,
 			contacts: thoroughReports.contacts,
-		})
+		}, h.OutOfScope)
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -89,12 +90,9 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	// katana dependencies break subfinder.
-	// see issue https://github.com/projectdiscovery/subfinder/issues/703
-	// due to incompatibility with github.com/projectdiscovery/ratelimit@v0.0.1
-	// if err := runKatana(urlFile, opts); err != nil {
-	//	return localio.LogError(err)
-	// }
+	if err := runKatana(urlFile, opts); err != nil {
+		return localio.LogError(err)
+	}
 
 	if err = runGoWitness(urlFile, opts.Output); err != nil {
 		return localio.LogError(err)

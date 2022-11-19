@@ -27,9 +27,10 @@ func newClient(opts *Options) *GitHubClient {
 }
 
 type PublicGitInfo struct {
-	orgHTTPSCloneURLs     []string
-	orgUserHTTPSCloneURLs []string
-	Members               PublicGitMembers
+	OrgHTTPSCloneURLs              []string
+	OrgUserHTTPSCloneURLs          []string
+	OrgUserNonForkedHTTPSCloneURLs []string
+	Members                        PublicGitMembers
 }
 
 type PublicGitMembers struct {
@@ -37,6 +38,7 @@ type PublicGitMembers struct {
 	LoginName        []string
 }
 
+// GetAllOrgMemberRepoURLs ...
 func (c *GitHubClient) GetAllOrgMemberRepoURLs(members []string) (*PublicGitInfo, error) {
 	p := &PublicGitInfo{}
 	for _, member := range members {
@@ -44,7 +46,7 @@ func (c *GitHubClient) GetAllOrgMemberRepoURLs(members []string) (*PublicGitInfo
 		if err != nil {
 			return nil, localio.LogError(err)
 		}
-		p.orgUserHTTPSCloneURLs = append(p.orgUserHTTPSCloneURLs, memberRepos.orgUserHTTPSCloneURLs...)
+		p.OrgUserHTTPSCloneURLs = append(p.OrgUserHTTPSCloneURLs, memberRepos.OrgUserHTTPSCloneURLs...)
 	}
 
 	return p, nil
@@ -58,7 +60,12 @@ func (c *GitHubClient) GetPublicOrgUserRepoURLs(username string) (*PublicGitInfo
 		return nil, localio.LogError(err)
 	}
 	for _, repo := range repos {
-		p.orgUserHTTPSCloneURLs = append(p.orgUserHTTPSCloneURLs, *repo.CloneURL)
+		p.OrgUserHTTPSCloneURLs = append(p.OrgUserHTTPSCloneURLs, *repo.CloneURL)
+		// only interested in non forked URLs as some users fork repos for no reason
+		// could go a step further to check if the forked URLs are ahead by X number of commits. That's a TODO
+		if !*repo.Fork {
+			p.OrgUserNonForkedHTTPSCloneURLs = append(p.OrgUserNonForkedHTTPSCloneURLs, *repo.CloneURL)
+		}
 	}
 	return p, nil
 }
@@ -95,7 +102,7 @@ func (c *GitHubClient) GetPublicOrgRepoURLs(organization string) (*PublicGitInfo
 		return nil, localio.LogError(err)
 	}
 	for _, repo := range repos {
-		p.orgHTTPSCloneURLs = append(p.orgHTTPSCloneURLs, *repo.CloneURL)
+		p.OrgHTTPSCloneURLs = append(p.OrgHTTPSCloneURLs, *repo.CloneURL)
 	}
 	return p, nil
 }
@@ -127,6 +134,7 @@ func (c *GitHubClient) ListPublicOrgRepos(organization string) ([]*github.Reposi
 // SearchUsers searches GitHub for the supplied Company arg for the organization user and returns the best match based on the primary company base domain.
 // and compares it against the GitHub username which is often similar or the same as the base domain minus tld.
 func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
+	localio.Infof("Searching for GitHub Organization: %s", opts.Company)
 	var baseDomains []string
 	rtd := reflect.TypeOf(opts.Domain)
 	switch rtd.Kind() {
@@ -150,9 +158,14 @@ func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
 	if resp.TokenExpiration.IsZero() {
 		localio.PrintInfo("TokenExpired", resp.TokenExpiration.String(), "GitHub Personal Access Token is Expired...")
 	}
+	if opts.Debug {
+		if err = localio.PrettyPrint(users); err != nil {
+			return "", localio.LogError(err)
+		}
+	}
 
 	for _, user := range users.Users {
-		if *user.Type == "Organization" && localio.Contains(baseDomains, *user.Login) {
+		if *user.Type == "Organization" && localio.Contains(baseDomains, *user.Login) || strings.EqualFold(*user.Login, opts.Company) {
 			matchedUsers = append(matchedUsers, *user.Login)
 		}
 	}
@@ -161,16 +174,23 @@ func (c *GitHubClient) SearchUsers(opts *Options) (string, error) {
 		localio.PrintInfo("GitHub Organization", matchedUsers[0], "Found Public GitHub Organization!")
 		return matchedUsers[0], nil
 	}
+	localio.LogWarningf("Couldn't find GitHub Organization for company: %s", opts.Company)
 
 	return "", nil
 }
 
 // GetPublicOrgMembers ...
 func (c *GitHubClient) GetPublicOrgMembers(organization string) (*PublicGitInfo, error) {
+	localio.Infof("Searching GitHub Organization: %s for Public Members", organization)
 	p := &PublicGitInfo{}
 	members, err := c.ListPublicMembers(organization)
 	if err != nil {
 		return nil, localio.LogError(err)
+	}
+	if len(members) > 0 {
+		localio.Infof("Found %d GitHub Organization members!", len(members))
+	} else {
+		localio.Infof("no organization members found for %s", organization)
 	}
 
 	for _, member := range members {

@@ -1,9 +1,9 @@
-COMPANY: "TODO"
-CREATOR: "TODO"
-WORKSPACE: "TODO"
+COMPANY: ""
+CREATOR: ""
+WORKSPACE: ""
 OUTPUT: "/home/YOUR-USERNAME/work"
 SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
-GITHUB_TOKEN: "TODO"
+GITHUB_TOKEN: ""
 DOMAIN: |-
   todo.foo
   www.todo.foo
@@ -16,14 +16,12 @@ MODULES: |-
   recon/domains-hosts/hackertarget
   recon/domains-hosts/mx_spf_ip
   recon/domains-hosts/netcraft
-  recon/domains-hosts/shodan_hostname
   recon/domains-hosts/ssl_san
   recon/domains-vulnerabilities/xssed
   recon/hosts-hosts/bing_ip
   recon/hosts-hosts/resolve
   recon/hosts-hosts/reverse_resolve
   recon/hosts-hosts/ssltools
-  recon/hosts-ports/shodan_ip
   recon/netblocks-companies/censys_netblock_company
   recon/netblocks-hosts/reverse_resolve
   recon/domains-companies/censys_companies
@@ -38,12 +36,10 @@ MODULES: |-
   recon/contacts-domains/censys_email_to_domains
   recon/profiles-contacts/bing_linkedin_contacts
   recon/contacts-profiles/fullcontact
-  reporting/csv
-  reporting/html
-  reporting/list
 NETBLOCK: |-
   XXX.XX.XX.X/24
 OUT_OF_SCOPE: |-
   XXX.XX.XX.XXX
+  XXX.XX.XX.XXX/24
   outofscope.todo.foo
   outofscope.foo.bar.todo.blah

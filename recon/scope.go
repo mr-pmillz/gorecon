@@ -24,36 +24,50 @@ type Hosts struct {
 }
 
 // getOutOfScope ...
-//nolint:all
-func getOutOfScope(OOScope interface{}) ([]string, error) {
+//nolint:gocognit
+func getOutOfScope(outtaScope interface{}) ([]string, error) {
 	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
-	outOfScopeType := reflect.TypeOf(OOScope)
+	outOfScopeType := reflect.TypeOf(outtaScope)
 	switch outOfScopeType.Kind() {
 	case reflect.Slice:
-		for _, i := range OOScope.([]string) {
-			if !valid.IsCIDR(i) {
+		for _, i := range outtaScope.([]string) {
+			switch {
+			case valid.IsCIDR(i):
+				ips, err := mapcidr.IPAddresses(i)
+				if err != nil {
+					return nil, localio.LogError(err)
+				}
+				outOfScope = append(outOfScope, ips...)
+			default:
 				outOfScope = append(outOfScope, i)
 			}
 		}
 	case reflect.String:
-		if OOScope.(string) != "" {
-			if exists, err := localio.Exists(OOScope.(string)); exists && err == nil {
-				outOfScopes, err := localio.ReadLines(OOScope.(string))
+		if outtaScope.(string) != "" {
+			if exists, err := localio.Exists(outtaScope.(string)); exists && err == nil {
+				outOfScopes, err := localio.ReadLines(outtaScope.(string))
 				if err != nil {
 					return nil, err
 				}
 				for _, i := range outOfScopes {
-					if !valid.IsCIDR(i) {
+					switch {
+					case valid.IsCIDR(i):
+						ips, err := mapcidr.IPAddresses(i)
+						if err != nil {
+							return nil, localio.LogError(err)
+						}
+						outOfScope = append(outOfScope, ips...)
+					default:
 						outOfScope = append(outOfScope, i)
 					}
 				}
 			} else {
-				outOfScope = append(outOfScope, OOScope.(string))
+				outOfScope = append(outOfScope, outtaScope.(string))
 			}
 		}
 	}
 
-	return outOfScope, nil
+	return removeDuplicateStr(outOfScope), nil
 }
 
 //nolint:gocognit
@@ -431,7 +445,8 @@ func WriteHttpxURLsToFile(csvFilePath, outputDir string) (string, error) {
 	return outputFilePath, nil
 }
 
-func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:typecheck
+// ParseReconNGCSV ...
+func ParseReconNGCSV(csvFiles *CsvReportFiles, outOfScope []string) (*NGScope, error) { //nolint:typecheck
 	scope := NGScope{}
 	ports, err := os.OpenFile(csvFiles.ports, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
@@ -452,15 +467,17 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 	}
 
 	for _, i := range p {
-		scope.Ports = append(scope.Ports, NGPortsCSV{
-			IP:       i.IP,
-			Host:     i.Host,
-			Port:     i.Port,
-			Protocol: i.Protocol,
-			Banner:   i.Banner,
-			Notes:    i.Notes,
-			Module:   i.Module,
-		})
+		if isInScope(i.IP, outOfScope) && isInScope(i.Host, outOfScope) {
+			scope.Ports = append(scope.Ports, NGPortsCSV{
+				IP:       i.IP,
+				Host:     i.Host,
+				Port:     i.Port,
+				Protocol: i.Protocol,
+				Banner:   i.Banner,
+				Notes:    i.Notes,
+				Module:   i.Module,
+			})
+		}
 	}
 
 	reportHosts, err := os.OpenFile(csvFiles.hosts, os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -479,21 +496,23 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 		return nil, err
 	}
 	for _, i := range h {
-		scope.Hosts = append(scope.Hosts, NGHostsCSV{
-			Host:    i.Host,
-			IP:      i.IP,
-			Region:  i.Region,
-			Country: i.Country,
-			Lat:     i.Lat,
-			Long:    i.Long,
-			Notes:   i.Notes,
-			Module:  i.Module,
-		})
-		parts := strings.Split(i.Host, ".")
-		if len(parts) == 2 {
-			d := strings.Join(parts, ".")
-			if !localio.Contains(scope.Domains, d) {
-				scope.Domains = append(scope.Domains, d)
+		if isInScope(i.IP, outOfScope) && isInScope(i.Host, outOfScope) {
+			scope.Hosts = append(scope.Hosts, NGHostsCSV{
+				Host:    i.Host,
+				IP:      i.IP,
+				Region:  i.Region,
+				Country: i.Country,
+				Lat:     i.Lat,
+				Long:    i.Long,
+				Notes:   i.Notes,
+				Module:  i.Module,
+			})
+			parts := strings.Split(i.Host, ".")
+			if len(parts) == 2 {
+				d := strings.Join(parts, ".")
+				if !localio.Contains(scope.Domains, d) {
+					scope.Domains = append(scope.Domains, d)
+				}
 			}
 		}
 	}
@@ -531,10 +550,39 @@ func ParseReconNGCSV(csvFiles *CsvReportFiles) (*NGScope, error) { //nolint:type
 	return &scope, nil
 }
 
+// isInScope ...
+func isInScope(scopeKind string, outOfScope []string) bool {
+	// check if any CIDRs in outOfScope slice
+	for _, i := range outOfScope {
+		if valid.IsCIDR(i) {
+			ips, _ := mapcidr.IPAddresses(i)
+			outOfScope = append(outOfScope, ips...)
+		}
+	}
+	// remove any potential duplicates from outOfScope
+	sortedOutOfScope := removeDuplicateStr(outOfScope)
+
+	switch {
+	case valid.IsCIDR(scopeKind):
+		ips, _ := mapcidr.IPAddresses(scopeKind)
+		for _, ip := range ips {
+			if !localio.Contains(sortedOutOfScope, ip) {
+				return true
+			}
+		}
+	default:
+		if !localio.Contains(sortedOutOfScope, scopeKind) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (h *Hosts) isDomainInScope(domain string) bool {
 	// check that domain is in scope by resolving and checking against netblocks
 	ipv4s, _ := resolveDomainToIP(domain)
-	if len(ipv4s) > 0 {
+	if len(ipv4s) > 0 && !localio.Contains(h.OutOfScope, domain) {
 		for _, netblock := range h.CIDRs {
 			ips, _ := mapcidr.IPAddresses(netblock)
 			for _, ip := range ips {

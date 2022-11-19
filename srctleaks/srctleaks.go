@@ -27,7 +27,8 @@ func Run(opts *Options) error {
 		if err != nil {
 			return localio.LogError(err)
 		}
-		pubGitInfo.orgUserHTTPSCloneURLs = orgMemberRepoURLs.orgUserHTTPSCloneURLs
+		pubGitInfo.OrgUserHTTPSCloneURLs = orgMemberRepoURLs.OrgUserHTTPSCloneURLs
+		pubGitInfo.OrgUserNonForkedHTTPSCloneURLs = orgMemberRepoURLs.OrgUserNonForkedHTTPSCloneURLs
 
 		// write found data to json file
 		if err = localio.WriteStructToJSONFile(pubGitInfo, fmt.Sprintf("%s/company-repos/public-organization-gitinfo.json", opts.Output)); err != nil {
@@ -35,17 +36,19 @@ func Run(opts *Options) error {
 		}
 
 		// runGitLeaks
-		localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against %s", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
-		if err = runGitLeaks(pubGitInfo.orgHTTPSCloneURLs, opts); err != nil {
+		localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against %s", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.OrgHTTPSCloneURLs)))
+		if err = runGitLeaks(pubGitInfo.OrgHTTPSCloneURLs, opts); err != nil {
 			return localio.LogError(err)
 		}
 
-		// ToDo: Run against all Organization Users, Might take a while. Make this optional.. ToDo
-		// Uncomment these lines to do that
-		// localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against all %s users!", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.orgHTTPSCloneURLs)))
-		// if err = runGitLeaks(pubGitInfo.orgUserHTTPSCloneURLs, opts); err != nil {
-		//	 return localio.LogError(err)
-		// }
+		// if --check-all-org-users is true, run GitLeaks against all organization public member users own public NON-FORKED repos
+		if opts.CheckAllOrgUsers {
+			localio.PrintInfo("GitLeaks", fmt.Sprintf("Running GitLeaks against all %s users!", opts.Company), fmt.Sprintf("found: %d public organization repositories", len(pubGitInfo.OrgUserNonForkedHTTPSCloneURLs)))
+			if err = runGitLeaks(pubGitInfo.OrgUserNonForkedHTTPSCloneURLs, opts); err != nil {
+				return localio.LogError(err)
+			}
+		}
+
 	}
 	return nil
 }

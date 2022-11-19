@@ -7,10 +7,12 @@ import (
 )
 
 type Options struct {
-	Company     string
-	GithubToken string
-	Domain      interface{}
-	Output      string
+	Company          string
+	GithubToken      string
+	Domain           interface{}
+	Output           string
+	Debug            bool
+	CheckAllOrgUsers bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -18,6 +20,8 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("github-token", "", "", "github personal access token for github API interaction")
 	cmd.PersistentFlags().StringP("domain", "d", "", "domain string or file containing domains ex. domains.txt")
 	cmd.PersistentFlags().StringP("output", "o", "", "report output dir")
+	cmd.PersistentFlags().BoolP("debug", "", false, "Prints verbose debugging information")
+	cmd.PersistentFlags().BoolP("check-all-org-users", "", false, "runs gitleaks against all GitHub organization users public repos. Be cautious, this can take a while. Currently ignores Forked Repos")
 	return nil
 }
 
@@ -67,6 +71,18 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Output = output.(string)
+
+	cmdDebug, err := cmd.Flags().GetBool("debug")
+	if err != nil {
+		return err
+	}
+	opts.Debug = cmdDebug
+
+	cmdCheckAllOrgUsers, err := cmd.Flags().GetBool("check-all-org-users")
+	if err != nil {
+		return err
+	}
+	opts.CheckAllOrgUsers = cmdCheckAllOrgUsers
 
 	return nil
 }

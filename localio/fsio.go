@@ -18,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/projectdiscovery/gologger/formatter"
 
+	valid "github.com/asaskevich/govalidator"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/spf13/cobra"
@@ -51,9 +52,11 @@ func Contains(s []string, str string) bool {
 // Also checks exact matches
 func ContainsChars(s []string, str string) bool {
 	for _, v := range s {
-		parts := strings.Split(str, ".")
-		if Contains(parts, v) {
-			return true
+		if !valid.IsCIDR(str) && !valid.IsIPv4(str) {
+			parts := strings.Split(str, ".")
+			if Contains(parts, v) {
+				return true
+			}
 		}
 	}
 
@@ -203,6 +206,13 @@ func RunCommandsPipeOutput(commands []string) error {
 
 // WriteStructToJSONFile ...
 func WriteStructToJSONFile(data interface{}, outputFile string) error {
+	outputFileDir := filepath.Dir(outputFile)
+	if exists, err := Exists(outputFileDir); err == nil && !exists {
+		if err = os.MkdirAll(outputFileDir, 0750); err != nil {
+			return LogError(err)
+		}
+	}
+
 	f, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return LogError(err)
@@ -229,16 +239,22 @@ func LogInfo(key, val, msg string) {
 	gologger.Info().Str(key, val).Msg(msg)
 }
 
-// LogWarning logs a warning to stdout
-func LogWarning(key, val, msg string) {
+// LogWarningf logs a warning to stdout
+func LogWarningf(format string, args ...interface{}) {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelWarning)
-	gologger.Warning().Str(key, val).Msg(msg)
+	gologger.Warning().Msgf(format, args...)
 }
 
 // PrintInfo is a wrapper around gologger Info method
 func PrintInfo(key, val, msg string) {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelInfo)
 	gologger.Info().Str(key, val).Msg(msg)
+}
+
+// Infof ...
+func Infof(format string, args ...interface{}) {
+	gologger.DefaultLogger.SetMaxLevel(levels.LevelInfo)
+	gologger.Info().Msgf(format, args...)
 }
 
 func LogError(err error) error {

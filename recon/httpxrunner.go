@@ -81,12 +81,10 @@ func runHTTPXOutputCSV(urls []string, outputDir string) (string, error) {
 		DebugResponse:      false,
 		DebugRequests:      false,
 		NoColor:            true,
-		Stream:             false,
 		ContentLength:      true,
 		Threads:            20,
 		OutputServerHeader: true,
 		LeaveDefaultPorts:  true,
-		Verbose:            false,
 		OutputContentType:  true,
 		OutputMethod:       true,
 		OutputResponseTime: true,
@@ -94,7 +92,7 @@ func runHTTPXOutputCSV(urls []string, outputDir string) (string, error) {
 		OutputLinesCount:   true,
 		OutputWordsCount:   true,
 		Asn:                true,
-		Timeout:            30,
+		Timeout:            60,
 	}
 	if err := options.ValidateOptions(); err != nil {
 		log.Fatal(err)

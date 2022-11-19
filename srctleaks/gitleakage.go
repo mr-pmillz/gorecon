@@ -71,7 +71,7 @@ func runGitLeaks(repos []string, opts *Options) error {
 		// log info about the scan
 		localio.PrintInfo("RepositoryURL", repo, fmt.Sprintf("scan completed in %s", FormatDuration(time.Since(start))))
 		if len(findings) != 0 {
-			localio.LogWarning("RepositoryName", repoName, fmt.Sprintf("leaks found: %d", len(findings)))
+			localio.LogWarningf("%d leaks found for: %s", len(findings), repoName)
 			// write report output json
 			if err = report.Write(findings, cfg, "json", fmt.Sprintf("%s/%s.json", cloneDir, repoName)); err != nil {
 				return localio.LogError(err)
