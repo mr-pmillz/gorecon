@@ -75,13 +75,13 @@ func printTable(n *DataNessus, opts *Options) error {
 
 	affectedHostsPluginID := map[string][]string{}
 	items := map[string][]string{}
-	for _, finding := range n.Report.ReportHosts {
-		for _, info := range finding.ReportItems {
+	for _, reportHost := range n.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
 			if info.RiskFactor == "None" {
 				continue
 			}
 
-			affectedHostsPluginID[info.PluginID] = append(affectedHostsPluginID[info.PluginID], fmt.Sprintf("%s:%d", finding.Name, info.Port))
+			affectedHostsPluginID[info.PluginID] = append(affectedHostsPluginID[info.PluginID], fmt.Sprintf("%s:%d", reportHost.Name, info.Port))
 			items[info.PluginName] = []string{info.PluginName, info.PluginID, info.RiskFactor, strconv.FormatBool(info.ExploitAvailable), fmt.Sprintf("%f", info.CVSSBaseScore)}
 		}
 	}
