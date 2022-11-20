@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/mr-pmillz/gorecon/cmd/nessus"
 	"github.com/mr-pmillz/gorecon/cmd/srctleaks"
 	"strings"
 
@@ -34,6 +35,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is APP_ROOT/config/config.yaml")
 	RootCmd.AddCommand(recon.Command)
 	RootCmd.AddCommand(srctleaks.Command)
+	RootCmd.AddCommand(nessus.Command)
 }
 
 // initConfig reads in config file and ENV variables if set.

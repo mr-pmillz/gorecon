@@ -8,6 +8,8 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20220927221512-ad3251f9fa25
 	github.com/google/go-github/v48 v48.0.0
 	github.com/jpillora/go-tld v1.2.1
+	github.com/olekukonko/tablewriter v0.0.5
+	github.com/projectdiscovery/asnmap v0.0.1
 	github.com/projectdiscovery/gologger v1.1.5-0.20220817095646-8663411b1b0b
 	github.com/projectdiscovery/httpx v1.2.5
 	github.com/projectdiscovery/mapcidr v1.0.3
@@ -99,7 +101,6 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/asnmap v0.0.1 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/cdncheck v0.0.4-0.20220413175814-b47bc2d578b1 // indirect
 	github.com/projectdiscovery/chaos-client v0.3.0 // indirect

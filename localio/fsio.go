@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/user"
@@ -520,3 +521,71 @@ func WriteLines(lines []string, path string) error {
 	}
 	return w.Flush()
 }
+
+func OrderIPPair(firstIP string, secondIP string) [2]string {
+	// extract numbers out of IP strings
+	firstIPPortArr := strings.Split(firstIP, ":")
+	firstIPArr := strings.Split(firstIPPortArr[0], ".")
+	secondIPPortArr := strings.Split(secondIP, ":")
+	secondIPArr := strings.Split(secondIPPortArr[0], ".")
+
+	// compare and return ordered string literal array
+	for index, num := range firstIPArr {
+		switch {
+		case num == secondIPArr[index]:
+			continue
+		case num > secondIPArr[index]:
+			return [2]string{secondIP, firstIP}
+		default:
+			return [2]string{firstIP, secondIP}
+		}
+	} // now check ports if nums were the same and return ordered IP:Ports
+	if firstIPPortArr[1] < secondIPPortArr[1] {
+		return [2]string{firstIP, secondIP}
+	}
+	return [2]string{secondIP, firstIP}
+}
+
+// SortIPs sorts IP addresses of an array in asc. order (quicksort)
+func SortIPs(addrs []string) []string {
+	// recursion base case
+	if len(addrs) < 2 {
+		return addrs
+	}
+	// random ip in addrs as pivot
+	pivot := addrs[rand.Intn(len(addrs))] //nolint:gosec
+
+	var left []string   // for IPs<pivot
+	var middle []string // for IPs=pivot
+	var right []string  // for IPs>pivot
+
+	for _, ip := range addrs {
+		switch {
+		case OrderIPPair(ip, pivot)[0] == ip:
+			left = append(left, ip)
+		case ip == pivot:
+			middle = append(middle, ip)
+		default:
+			right = append(right, ip)
+		}
+	}
+
+	// combine and return
+	left, right = SortIPs(left), SortIPs(right)
+	sortedIPs := append(left, middle...) //nolint:gocritic
+	sortedIPs = append(sortedIPs, right...)
+	return sortedIPs
+}
+
+//// RemoveDuplicateStr removes duplicate strings from a slice of strings
+// func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
+//	allKeys := make(map[string]bool)
+//	var list []string
+//	for _, item := range strSlice {
+//		if _, value := allKeys[item]; !value {
+//			allKeys[item] = true
+//			list = append(list, item)
+//		}
+//	}
+//	return list
+//}
