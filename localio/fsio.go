@@ -578,7 +578,7 @@ func SortIPs(addrs []string) []string {
 }
 
 //// RemoveDuplicateStr removes duplicate strings from a slice of strings
-//func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
+// func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
 //	allKeys := make(map[string]bool)
 //	var list []string
 //	for _, item := range strSlice {

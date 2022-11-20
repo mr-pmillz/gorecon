@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/mr-pmillz/gorecon/localio"
 	"github.com/olekukonko/tablewriter"
-	"io/ioutil"
+	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -168,7 +168,7 @@ func getNessusData(nessusFile string) (*DataNessus, error) {
 	}
 	defer nesFile.Close()
 
-	data, err := ioutil.ReadAll(nesFile)
+	data, err := io.ReadAll(nesFile)
 	if err != nil {
 		return nil, localio.LogError(err)
 	}
@@ -223,6 +223,7 @@ type Tag struct {
 }
 
 // ReportItem is vulnerability plugin output.
+//nolint:staticcheck
 type ReportItem struct {
 	Port                       int      `xml:"port,attr"`
 	SvcName                    string   `xml:"svc_name,attr"`
