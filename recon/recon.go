@@ -6,6 +6,7 @@ import (
 )
 
 // RunAllRecon ...
+//nolint:gocognit
 func (h *Hosts) RunAllRecon(opts *Options) error {
 	localio.PrintInfo("GoRecon", opts.Company, "Running All Recon Modules!")
 	if err := localio.PrettyPrint(h); err != nil {
