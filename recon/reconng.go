@@ -139,40 +139,52 @@ func runModulesDefault(workspace string, modules []string) error {
 		"reporting/list",
 	}
 	for _, module := range modules {
-		if !localio.Contains(ignoreModules, module) {
+		if !localio.Contains(ignoreModules, module) && !isContactsModule(module) {
 			if err := runModule(workspace, module, "default"); err != nil {
-				return err
+				return localio.LogError(err)
 			}
 		}
 	}
 	return nil
 }
 
+// isContactsModule ...
+func isContactsModule(module string) bool {
+	parts := strings.Split(module, "/")
+	if len(parts) > 0 && len(parts) <= 2 {
+		moduleType := parts[1]
+		modParts := strings.Split(moduleType, "-")
+		if localio.Contains(modParts, "contacts") {
+			return true
+		}
+	}
+	return false
+}
+
 // runContactsModules runs all contacts modules after gathering emails via hunterio
-func runContactsModules(workspace string) error {
+func runContactsModules(workspace string, modules []string) error {
 	// first run hunterio to gather emails and populate the contacts db.
 	hunterIO := "recon/domains-contacts/hunter_io"
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=default -o count=100 -x", workspace, hunterIO)); err != nil {
-		return err
+	if localio.Contains(modules, hunterIO) {
+		if err := localio.RunCommandPipeOutput(fmt.Sprintf("recon-cli -w %s -m %s -o source=default -o count=100 -x", workspace, hunterIO)); err != nil {
+			return localio.LogError(err)
+		}
 	}
 
-	// commented these contacts modules out. Let the user decided what modules to run based on config.yaml or modules.txt
-	// contactModules := []string{
-	//	"recon/contacts-credentials/hibp_breach",
-	//	"recon/contacts-credentials/hibp_paste",
-	//	"recon/contacts-profiles/fullcontact",
-	//	"recon/domains-contacts/metacrawler",
-	//	"recon/domains-contacts/pgp_search",
-	//	"recon/domains-contacts/whois_pocs",
-	//	"recon/domains-contacts/wikileaker",
-	//	"recon/companies-contacts/bing_linkedin_cache",
-	//	"recon/companies-contacts/censys_email_address",
-	//	"recon/companies-multi/whois_miner",
-	//	"recon/contacts-domains/censys_email_to_domains",
-	// }
-	// if err := runModulesDefault(workspace, contactModules); err != nil {
-	//	return err
-	// }
+	// now check for any other contacts modules and run them except for hunter_io
+	var contactModules []string
+	for _, module := range modules {
+		if isContactsModule(module) && module != hunterIO {
+			contactModules = append(contactModules, module)
+		}
+	}
+
+	for _, contactModule := range contactModules {
+		if err := runModule(workspace, contactModule, "default"); err != nil {
+			return localio.LogError(err)
+		}
+	}
+
 	return nil
 }
 
@@ -388,7 +400,7 @@ func (h *Hosts) RunReconNG(opts *Options) (*CsvReportFiles, error) {
 			return nil, err
 		}
 
-		if err := runContactsModules(opts.Workspace); err != nil {
+		if err := runContactsModules(opts.Workspace, modules); err != nil {
 			return nil, err
 		}
 		// run default modules a second time to ensure nothing was missed
@@ -410,7 +422,7 @@ func (h *Hosts) RunReconNG(opts *Options) (*CsvReportFiles, error) {
 			return nil, err
 		}
 
-		if err := runContactsModules(opts.Workspace); err != nil {
+		if err := runContactsModules(opts.Workspace, modules); err != nil {
 			return nil, err
 		}
 		// run default modules a second time to ensure nothing was missed

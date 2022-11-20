@@ -11,7 +11,7 @@ import (
 func runGoWitness(urlsFile, outputDir string) error {
 	// install the latest version of goWitness
 	// TODO: Run GoWitness Natively in Go...
-	if err := localio.RunCommandPipeOutput("go install github.com/sensepost/gowitness@latest"); err != nil {
+	if err := localio.RunCommandPipeOutput("GO111MODULE=on go install github.com/sensepost/gowitness@latest"); err != nil {
 		return err
 	}
 	if gowitness, exists := localio.CommandExists("gowitness"); exists {

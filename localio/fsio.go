@@ -67,22 +67,22 @@ func ContainsChars(s []string, str string) bool {
 func EmbedFileCopy(src fs.File, dst string) error {
 	destFilePath, err := ResolveAbsPath(dst)
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 
 	if exists, err := Exists(filepath.Dir(destFilePath)); err == nil && !exists {
 		if err = os.MkdirAll(filepath.Dir(destFilePath), 0750); err != nil {
-			return err
+			return LogError(err)
 		}
 	}
 
 	destFile, err := os.Create(destFilePath)
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 
 	if _, err := io.Copy(destFile, src); err != nil {
-		return err
+		return LogError(err)
 	}
 
 	return nil
@@ -111,25 +111,25 @@ func Exists(path string) (bool, error) {
 func CopyFile(src, dest string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 	defer srcFile.Close()
 
 	if exists, err := Exists(filepath.Dir(dest)); err == nil && !exists {
 		if err = os.MkdirAll(filepath.Dir(dest), 0750); err != nil {
-			return err
+			return LogError(err)
 		}
 	}
 
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 	defer destFile.Close()
 
 	buf := make([]byte, 1024*1024*4)
 	_, err = io.CopyBuffer(destFile, srcFile, buf)
-	return err
+	return LogError(err)
 }
 
 // TimeTrack ...
@@ -146,7 +146,7 @@ func RunCommandPipeOutput(command string) error {
 	LogInfo("Command", command, "")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 
 	// Increase timeout to 24 hours for long-running recon-ng process
@@ -159,12 +159,12 @@ func RunCommandPipeOutput(command string) error {
 	cmd := exec.CommandContext(ctx, bashPath, "-c", command)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 
 	errScanner := bufio.NewScanner(stderr)
@@ -183,12 +183,12 @@ func RunCommandPipeOutput(command string) error {
 
 	cmd.Env = os.Environ()
 	if err = cmd.Start(); err != nil {
-		return err
+		return LogError(err)
 	}
 
 	if err = cmd.Wait(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error waiting for Cmd %s\n", err)
-		return err
+		_, _ = fmt.Fprintf(os.Stderr, "Error waiting for Cmd %s\n", err)
+		return LogError(err)
 	}
 
 	return nil
@@ -198,7 +198,7 @@ func RunCommandPipeOutput(command string) error {
 func RunCommandsPipeOutput(commands []string) error {
 	for _, c := range commands {
 		if err := RunCommandPipeOutput(c); err != nil {
-			return err
+			return LogError(err)
 		}
 	}
 	return nil
@@ -466,7 +466,7 @@ func InstallPython3VirtualEnv() error {
 	// to work around this, just always update and install virtualenv + deps as opposed to checking semantic versioning
 	// and adding another module like https://github.com/Masterminds/semver
 	if err := RunCommandPipeOutput("sudo apt-get update -y && sudo apt-get -q install virtualenv python3-distutils python3-virtualenv -y"); err != nil {
-		return err
+		return LogError(err)
 	}
 	return nil
 }
@@ -508,13 +508,15 @@ func ReadLines(path string) ([]string, error) {
 func WriteLines(lines []string, path string) error {
 	file, err := os.Create(path)
 	if err != nil {
-		return err
+		return LogError(err)
 	}
 	defer file.Close()
 
 	w := bufio.NewWriter(file)
 	for _, line := range lines {
-		fmt.Fprintln(w, line)
+		if len(line) > 0 {
+			_, _ = fmt.Fprintln(w, line)
+		}
 	}
 	return w.Flush()
 }

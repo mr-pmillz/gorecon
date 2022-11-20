@@ -10,7 +10,6 @@ require (
 	github.com/jpillora/go-tld v1.2.1
 	github.com/projectdiscovery/gologger v1.1.5-0.20220817095646-8663411b1b0b
 	github.com/projectdiscovery/httpx v1.2.5
-	github.com/projectdiscovery/katana v0.0.2
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/subfinder/v2 v2.5.5
 	github.com/rs/zerolog v1.26.1
@@ -80,7 +79,6 @@ require (
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/lukasbob/srcset v0.0.0-20190730101422-86b742e617f3 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
@@ -123,7 +121,7 @@ require (
 	github.com/projectdiscovery/rawhttp v0.0.8-0.20210814181734-56cca67b6e7e // indirect
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryabledns v1.0.15 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.3-0.20220506110515-811d938bd26d // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.3 // indirect
 	github.com/projectdiscovery/sliceutil v0.0.0-20220625085859-c3a4ecb669f4 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
 	github.com/projectdiscovery/tlsx v0.0.9 // indirect

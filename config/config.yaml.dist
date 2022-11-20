@@ -23,7 +23,6 @@ MODULES: |-
   recon/hosts-hosts/reverse_resolve
   recon/hosts-hosts/ssltools
   recon/netblocks-companies/censys_netblock_company
-  recon/netblocks-hosts/reverse_resolve
   recon/domains-companies/censys_companies
   recon/domains-contacts/hunter_io
   recon/domains-contacts/metacrawler

@@ -48,7 +48,6 @@ func Run(opts *Options) error {
 				return localio.LogError(err)
 			}
 		}
-
 	}
 	return nil
 }

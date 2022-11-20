@@ -2,6 +2,7 @@ package recon
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"reflect"
 	"strings"
@@ -23,52 +24,52 @@ type Hosts struct {
 	OutOfScope []string
 }
 
+// uncomment when using native katana package for scope control.
 // getOutOfScope ...
-//nolint:gocognit
-func getOutOfScope(outtaScope interface{}) ([]string, error) {
-	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
-	outOfScopeType := reflect.TypeOf(outtaScope)
-	switch outOfScopeType.Kind() {
-	case reflect.Slice:
-		for _, i := range outtaScope.([]string) {
-			switch {
-			case valid.IsCIDR(i):
-				ips, err := mapcidr.IPAddresses(i)
-				if err != nil {
-					return nil, localio.LogError(err)
-				}
-				outOfScope = append(outOfScope, ips...)
-			default:
-				outOfScope = append(outOfScope, i)
-			}
-		}
-	case reflect.String:
-		if outtaScope.(string) != "" {
-			if exists, err := localio.Exists(outtaScope.(string)); exists && err == nil {
-				outOfScopes, err := localio.ReadLines(outtaScope.(string))
-				if err != nil {
-					return nil, err
-				}
-				for _, i := range outOfScopes {
-					switch {
-					case valid.IsCIDR(i):
-						ips, err := mapcidr.IPAddresses(i)
-						if err != nil {
-							return nil, localio.LogError(err)
-						}
-						outOfScope = append(outOfScope, ips...)
-					default:
-						outOfScope = append(outOfScope, i)
-					}
-				}
-			} else {
-				outOfScope = append(outOfScope, outtaScope.(string))
-			}
-		}
-	}
-
-	return removeDuplicateStr(outOfScope), nil
-}
+// func getOutOfScope(outtaScope interface{}) ([]string, error) {
+//	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
+//	outOfScopeType := reflect.TypeOf(outtaScope)
+//	switch outOfScopeType.Kind() {
+//	case reflect.Slice:
+//		for _, i := range outtaScope.([]string) {
+//			switch {
+//			case valid.IsCIDR(i):
+//				ips, err := mapcidr.IPAddresses(i)
+//				if err != nil {
+//					return nil, localio.LogError(err)
+//				}
+//				outOfScope = append(outOfScope, ips...)
+//			default:
+//				outOfScope = append(outOfScope, i)
+//			}
+//		}
+//	case reflect.String:
+//		if outtaScope.(string) != "" {
+//			if exists, err := localio.Exists(outtaScope.(string)); exists && err == nil {
+//				outOfScopes, err := localio.ReadLines(outtaScope.(string))
+//				if err != nil {
+//					return nil, err
+//				}
+//				for _, i := range outOfScopes {
+//					switch {
+//					case valid.IsCIDR(i):
+//						ips, err := mapcidr.IPAddresses(i)
+//						if err != nil {
+//							return nil, localio.LogError(err)
+//						}
+//						outOfScope = append(outOfScope, ips...)
+//					default:
+//						outOfScope = append(outOfScope, i)
+//					}
+//				}
+//			} else {
+//				outOfScope = append(outOfScope, outtaScope.(string))
+//			}
+//		}
+//	}
+//
+//	return removeDuplicateStr(outOfScope), nil
+//}
 
 //nolint:gocognit
 //nolint:gocyclo
@@ -212,36 +213,46 @@ func removeDuplicateStr(strSlice []string) []string { //nolint:typecheck
 }
 
 // GenerateURLs creates a slice of http and https urls from recon-ng results scope.
+//nolint:gocognit
 func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { //nolint:typecheck
 	var urls []string //nolint:prealloc
-	ignoreDomains := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri"}
-	ignoreDomains = append(ignoreDomains, h.OutOfScope...)
+	ignoreHosts := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri"}
+	ignoreHosts = append(ignoreHosts, h.OutOfScope...)
 
 	// create http and https urls from found hosts
 	for _, host := range scope.Hosts {
-		if !localio.ContainsChars(ignoreDomains, host.Host) && !localio.ContainsChars(ignoreDomains, host.IP) && host.Host != "" && host.IP != "" {
+		if !localio.ContainsChars(ignoreHosts, host.Host) && !localio.ContainsChars(ignoreHosts, host.IP) && host.Host != "" && host.IP != "" {
 			urls = append(urls, fmt.Sprintf("http://%s", host.Host))
 			urls = append(urls, fmt.Sprintf("https://%s", host.Host))
-			urls = append(urls, fmt.Sprintf("http://%s", host.IP))
-			urls = append(urls, fmt.Sprintf("https://%s", host.IP))
+			// ensure that private IP addresses are ignored
+			if !net.IP.IsPrivate(net.IP(host.IP)) {
+				urls = append(urls, fmt.Sprintf("http://%s", host.IP))
+				urls = append(urls, fmt.Sprintf("https://%s", host.IP))
+			}
 		}
 	}
 	for _, hostPort := range scope.Ports {
-		if !localio.ContainsChars(ignoreDomains, hostPort.Host) && !localio.ContainsChars(ignoreDomains, hostPort.IP) && hostPort.Host != "" && hostPort.IP != "" {
+		if !localio.ContainsChars(ignoreHosts, hostPort.Host) && !localio.ContainsChars(ignoreHosts, hostPort.IP) && hostPort.Host != "" && hostPort.IP != "" {
 			switch hostPort.Port {
 			case "21", "22", "25", "53", "110", "119", "123", "135", "139", "143", "179", "194", "445", "500", "1433", "3389", "5985":
 				// Do nothing
 			case "80":
 				urls = append(urls, fmt.Sprintf("http://%s", hostPort.Host))
-				urls = append(urls, fmt.Sprintf("http://%s", hostPort.IP))
+				if !net.IP.IsPrivate(net.IP(hostPort.IP)) {
+					urls = append(urls, fmt.Sprintf("http://%s", hostPort.IP))
+				}
 			case "443":
 				urls = append(urls, fmt.Sprintf("https://%s", hostPort.Host))
-				urls = append(urls, fmt.Sprintf("https://%s", hostPort.IP))
+				if !net.IP.IsPrivate(net.IP(hostPort.IP)) {
+					urls = append(urls, fmt.Sprintf("https://%s", hostPort.IP))
+				}
 			default:
 				urls = append(urls, fmt.Sprintf("http://%s:%s/", hostPort.Host, hostPort.Port))
-				urls = append(urls, fmt.Sprintf("http://%s:%s/", hostPort.IP, hostPort.Port))
 				urls = append(urls, fmt.Sprintf("https://%s:%s/", hostPort.Host, hostPort.Port))
-				urls = append(urls, fmt.Sprintf("https://%s:%s/", hostPort.IP, hostPort.Port))
+				if !net.IP.IsPrivate(net.IP(hostPort.IP)) {
+					urls = append(urls, fmt.Sprintf("http://%s:%s/", hostPort.IP, hostPort.Port))
+					urls = append(urls, fmt.Sprintf("https://%s:%s/", hostPort.IP, hostPort.Port))
+				}
 			}
 		}
 	}
@@ -254,48 +265,50 @@ func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { /
 }
 
 type HttpxOutputCSV struct {
-	Timestamp        string `csv:"timestamp,omitempty"`
-	Asn              string `csv:"asn,omitempty"`
-	Csp              string `csv:"csp,omitempty"`
-	TLSGrab          string `csv:"tls-grab,omitempty"`
-	Hashes           string `csv:"hashes,omitempty"`
-	Regex            string `csv:"regex,omitempty"`
-	CdnName          string `csv:"cdn-name,omitempty"`
-	Port             int    `csv:"port,omitempty"`
-	URL              string `csv:"url,omitempty"`
-	Input            string `csv:"input,omitempty"`
-	Location         string `csv:"location,omitempty"`
-	Title            string `csv:"title,omitempty"`
-	Scheme           string `csv:"scheme,omitempty"`
-	Error            string `csv:"error,omitempty"`
-	Webserver        string `csv:"webserver,omitempty"`
-	ResponseBody     string `csv:"response-body,omitempty"`
-	ContentType      string `csv:"content-type,omitempty"`
-	Method           string `csv:"method,omitempty"`
-	Host             string `csv:"host,omitempty"`
-	Path             string `csv:"path,omitempty"`
-	FaviconMmh3      string `csv:"favicon-mmh3,omitempty"`
-	FinalURL         string `csv:"final-url,omitempty"`
-	ResponseHeader   string `csv:"response-header,omitempty"`
-	Request          string `csv:"request,omitempty"`
-	ResponseTime     string `csv:"response-time,omitempty"`
-	Jarm             string `csv:"jarm,omitempty"`
-	ChainStatusCodes string `csv:"chain-status-codes,omitempty"`
-	A                string `csv:"a,omitempty"`
-	Cnames           string `csv:"cnames,omitempty"`
-	Technologies     string `csv:"technologies,omitempty"`
-	Extracts         string `csv:"extracts,omitempty"`
-	Chain            string `csv:"chain,omitempty"`
-	Words            int    `csv:"words,omitempty"`
-	Lines            int    `csv:"lines,omitempty"`
-	StatusCode       int    `csv:"status-code,omitempty"`
-	ContentLength    int    `csv:"content-length,omitempty"`
-	Failed           bool   `csv:"failed,omitempty"`
-	Vhost            bool   `csv:"vhost,omitempty"`
-	Websocket        bool   `csv:"websocket,omitempty"`
-	Cdn              bool   `csv:"cdn,omitempty"`
-	HTTP2            bool   `csv:"http2,omitempty"`
-	Pipeline         bool   `csv:"pipeline,omitempty"`
+	Asn                string `csv:"asn,omitempty"`
+	A                  string `csv:"a,omitempty"`
+	Body               string `csv:"body,omitempty"`
+	Cdn                bool   `csv:"cdn,omitempty"`
+	CdnName            string `csv:"cdn_name,omitempty"`
+	ChainStatusCodes   string `csv:"chain_status_codes,omitempty"`
+	Chain              string `csv:"chain,omitempty"`
+	Cname              string `csv:"cname,omitempty"`
+	ContentLength      int    `csv:"content_length,omitempty"`
+	ContentType        string `csv:"content_type,omitempty"`
+	Csp                string `csv:"csp,omitempty"`
+	Error              string `csv:"error,omitempty"`
+	ExtractRegex       string `csv:"extract_regex,omitempty"`
+	Extracts           string `csv:"extracts,omitempty"`
+	Failed             bool   `csv:"failed,omitempty"`
+	Favicon            string `csv:"favicon,omitempty"`
+	FinalURL           string `csv:"final_url,omitempty"`
+	Hash               string `csv:"hash,omitempty"`
+	Header             string `csv:"header,omitempty"`
+	Host               string `csv:"host,omitempty"`
+	HTTP2              bool   `csv:"http2,omitempty"`
+	Input              string `csv:"input,omitempty"`
+	Jarm               string `csv:"jarm,omitempty"`
+	Lines              int    `csv:"lines,omitempty"`
+	Location           string `csv:"location,omitempty"`
+	Method             string `csv:"method,omitempty"`
+	Path               string `csv:"path,omitempty"`
+	Pipeline           bool   `csv:"pipeline,omitempty"`
+	Port               int    `csv:"port,omitempty"`
+	RawHeader          string `csv:"raw_header,omitempty"`
+	Request            string `csv:"request,omitempty"`
+	Scheme             string `csv:"scheme,omitempty"`
+	StatusCode         int    `csv:"status_code,omitempty"`
+	StoredResponsePath string `csv:"stored_response_path,omitempty"`
+	Tech               string `csv:"tech,omitempty"`
+	Timestamp          string `csv:"timestamp,omitempty"`
+	Time               string `csv:"time,omitempty"`
+	Title              string `csv:"title,omitempty"`
+	TLS                string `csv:"tls,omitempty"`
+	URL                string `csv:"url,omitempty"`
+	Vhost              bool   `csv:"vhost,omitempty"`
+	Webserver          string `csv:"webserver,omitempty"`
+	Websocket          bool   `csv:"websocket,omitempty"`
+	Words              int    `csv:"words,omitempty"`
 }
 
 // recon-ng csv parser section
@@ -373,48 +386,50 @@ func ParseHttpxCSV(csvFilePath string) (*NGScope, error) {
 
 	for _, i := range httpx {
 		scope.HttpxData = append(scope.HttpxData, HttpxOutputCSV{
-			Timestamp:        i.Timestamp,
-			Asn:              i.Asn,
-			Csp:              i.Csp,
-			TLSGrab:          i.TLSGrab,
-			Hashes:           i.Hashes,
-			Regex:            i.Regex,
-			CdnName:          i.CdnName,
-			Port:             i.Port,
-			URL:              i.URL,
-			Input:            i.Input,
-			Location:         i.Location,
-			Title:            i.Title,
-			Scheme:           i.Scheme,
-			Error:            i.Error,
-			Webserver:        i.Webserver,
-			ResponseBody:     i.ResponseBody,
-			ContentType:      i.ContentType,
-			Method:           i.Method,
-			Host:             i.Host,
-			Path:             i.Path,
-			FaviconMmh3:      i.FaviconMmh3,
-			FinalURL:         i.FinalURL,
-			ResponseHeader:   i.ResponseHeader,
-			Request:          i.Request,
-			ResponseTime:     i.ResponseTime,
-			Jarm:             i.Jarm,
-			ChainStatusCodes: i.ChainStatusCodes,
-			A:                i.A,
-			Cnames:           i.Cnames,
-			Technologies:     i.Technologies,
-			Extracts:         i.Extracts,
-			Chain:            i.Chain,
-			Words:            i.Words,
-			Lines:            i.Lines,
-			StatusCode:       i.StatusCode,
-			ContentLength:    i.ContentLength,
-			Failed:           i.Failed,
-			Vhost:            i.Vhost,
-			Websocket:        i.Websocket,
-			Cdn:              i.Cdn,
-			HTTP2:            i.HTTP2,
-			Pipeline:         i.Pipeline,
+			Asn:                i.Asn,
+			A:                  i.A,
+			Body:               i.Body,
+			Cdn:                i.Cdn,
+			CdnName:            i.CdnName,
+			ChainStatusCodes:   i.ChainStatusCodes,
+			Chain:              i.Chain,
+			Cname:              i.Cname,
+			ContentLength:      i.ContentLength,
+			ContentType:        i.ContentType,
+			Csp:                i.Csp,
+			Error:              i.Error,
+			ExtractRegex:       i.ExtractRegex,
+			Extracts:           i.Extracts,
+			Failed:             i.Failed,
+			Favicon:            i.Favicon,
+			FinalURL:           i.FinalURL,
+			Hash:               i.Hash,
+			Header:             i.Header,
+			Host:               i.Host,
+			HTTP2:              i.HTTP2,
+			Input:              i.Input,
+			Jarm:               i.Jarm,
+			Lines:              i.Lines,
+			Location:           i.Location,
+			Method:             i.Method,
+			Path:               i.Path,
+			Pipeline:           i.Pipeline,
+			Port:               i.Port,
+			RawHeader:          i.RawHeader,
+			Request:            i.Request,
+			Scheme:             i.Scheme,
+			StatusCode:         i.StatusCode,
+			StoredResponsePath: i.StoredResponsePath,
+			Tech:               i.Tech,
+			Timestamp:          i.Timestamp,
+			Time:               i.Time,
+			Title:              i.Title,
+			TLS:                i.TLS,
+			URL:                i.URL,
+			Vhost:              i.Vhost,
+			Webserver:          i.Webserver,
+			Websocket:          i.Websocket,
+			Words:              i.Words,
 		})
 	}
 

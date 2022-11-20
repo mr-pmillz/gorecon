@@ -90,7 +90,8 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	if err := runKatana(urlFile, opts); err != nil {
+	// fast content-discovery
+	if err = runKatana(urlFile, opts); err != nil {
 		return localio.LogError(err)
 	}
 
