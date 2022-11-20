@@ -19,6 +19,7 @@ type Options struct {
 	Workspace               string
 	SubFinderProviderConfig string
 	RunDNSRecon             bool
+	ASN                     bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -32,6 +33,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
 	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
+	cmd.PersistentFlags().BoolP("asn", "", false, "if this flag is set, will query primary domain for ASN data via asnmap package")
 	return nil
 }
 
@@ -45,6 +47,12 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Company = company.(string)
+
+	cmdASN, err := cmd.Flags().GetBool("asn")
+	if err != nil {
+		return err
+	}
+	opts.ASN = cmdASN
 
 	cmdDNSRecon, err := cmd.Flags().GetBool("run-dnsrecon")
 	if err != nil {

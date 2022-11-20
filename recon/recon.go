@@ -11,6 +11,15 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 	if err := localio.PrettyPrint(h); err != nil {
 		return localio.LogError(err)
 	}
+
+	if opts.ASN {
+		// TODO: can feed the primary ASNs to other tools as a later on feature such as amass etc...
+		_, err := getASNByDomain(opts)
+		if err != nil {
+			return localio.LogError(err)
+		}
+	}
+
 	// run dnsrecon to start off with because hacking recon is fun :)
 	if opts.RunDNSRecon {
 		if err := runDNSRecon(h.Domains, opts.Output); err != nil {
