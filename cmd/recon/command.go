@@ -6,8 +6,6 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra"
 
-	"github.com/mr-pmillz/gorecon/localio"
-
 	"github.com/mr-pmillz/gorecon/recon"
 )
 
@@ -34,17 +32,20 @@ var Command = &cobra.Command{
 	Use:   "recon [--domain|-d example.com]",
 	Args:  cobra.MinimumNArgs(0),
 	Short: "Run recon enumeration",
-	Long:  "Run recon enumeration",
+	Long: `Run recon enumeration
+
+Example Commands:
+	gorecon recon --config config.yaml
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		opts := Options{}
 		if err = opts.LoadFromCommand(cmd); err != nil {
 			gologger.Fatal().Msgf("Could not LoadFromCommand %s\n", err)
 		}
-		if exists, err := localio.Exists(opts.reconOptions.Output); err == nil && !exists {
-			if err = os.MkdirAll(opts.reconOptions.Output, 0750); err != nil {
-				gologger.Fatal().Msgf("Could not mkdir %s\n", err)
-			}
+
+		if err = os.MkdirAll(opts.reconOptions.Output, 0750); err != nil {
+			gologger.Fatal().Msgf("Could not mkdir %s\n", err)
 		}
 
 		hostScope, err := recon.NewScope(&opts.reconOptions)

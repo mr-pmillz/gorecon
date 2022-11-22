@@ -35,6 +35,7 @@ var Command = &cobra.Command{
 Example Commands:
 	gorecon nessus -n path/to/scan-results.nessus -o path/to/output-dir
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
+	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
@@ -47,11 +48,10 @@ Example Commands:
 			opts.nessusOptions.Output = "/tmp/parsed_nessus"
 		}
 
-		if exists, err := localio.Exists(opts.nessusOptions.Output); err == nil && !exists {
-			if err = os.MkdirAll(opts.nessusOptions.Output, 0750); err != nil {
-				gologger.Fatal().Msgf("Could not mkdir %s\n", err)
-			}
+		if err = os.MkdirAll(opts.nessusOptions.Output, 0750); err != nil {
+			gologger.Fatal().Msgf("Could not mkdir %s\n", err)
 		}
+
 		if err = nessus.Parse(&opts.nessusOptions); err != nil {
 			localio.LogFatal(err, "Could not parse nessus file")
 		}

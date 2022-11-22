@@ -248,11 +248,10 @@ func generateReport(workspace, creator, company, output string) (*CsvReportFiles
 	timestamp := time.Now().Format("01-02-2006")
 	csvReportFiles := &CsvReportFiles{}
 
-	if exists, err := localio.Exists(filepath.Dir(workReportDir)); err == nil && !exists {
-		if err = os.MkdirAll(filepath.Dir(workReportDir), 0750); err != nil {
-			return nil, err
-		}
+	if err = os.MkdirAll(filepath.Dir(workReportDir), 0750); err != nil {
+		return nil, err
 	}
+
 	for _, report := range reportFormats {
 		_company := strings.ReplaceAll(company, " ", "_")
 		ext := strings.Split(report, "/")[1]

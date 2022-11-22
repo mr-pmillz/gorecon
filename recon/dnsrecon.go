@@ -21,11 +21,10 @@ func runDNSRecon(domains []string, outputDir string) error {
 		}
 	default:
 		toolsDir = fmt.Sprintf("%s/tools", currentUser.HomeDir)
-		if exists, err := localio.Exists(toolsDir); err == nil && !exists {
-			if err = os.MkdirAll(toolsDir, 0750); err != nil {
-				return err
-			}
+		if err := os.MkdirAll(toolsDir, 0750); err != nil {
+			return err
 		}
+
 		if err := localio.GitClone("https://github.com/darkoperator/dnsrecon.git", fmt.Sprintf("%s/dnsrecon", toolsDir)); err != nil {
 			return err
 		}
@@ -38,11 +37,10 @@ func runDNSRecon(domains []string, outputDir string) error {
 
 	// setup dnsrecon virtualenv
 	virtualEnvsDir := fmt.Sprintf("%s/pyenv", currentUser.HomeDir)
-	if exists, err := localio.Exists(virtualEnvsDir); err == nil && !exists {
-		if err = os.MkdirAll(virtualEnvsDir, 0750); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(virtualEnvsDir, 0750); err != nil {
+		return err
 	}
+
 	if err := localio.RunCommandPipeOutput(fmt.Sprintf("virtualenv -p python3 %s/dnsrecon", virtualEnvsDir)); err != nil {
 		return err
 	}

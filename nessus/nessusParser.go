@@ -235,6 +235,11 @@ func Parse(opts *Options) error {
 	if err = printTable(data, opts); err != nil {
 		return localio.LogError(err)
 	}
+	if opts.TestSSL {
+		if err = runTestSSL(opts.Output, true); err != nil {
+			return localio.LogError(err)
+		}
+	}
 
 	return nil
 }

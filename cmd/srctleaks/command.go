@@ -30,7 +30,15 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 var Command = &cobra.Command{
 	Use:   "srctleaks",
 	Short: "GitHub Public Repo OSINT",
-	Long:  `Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets`,
+	Long: `Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets.
+
+Example Commands:
+	gorecon srctleaks -c SpyVsSpyEnterprises -d made-up-spy-domain.com --github-token ${GITHUB_TOKEN} -o path/to/output/dir 
+	gorecon srctleaks -c SpyVsSpyEnterprises -d made-up-spy-domain.com --github-token ${GITHUB_TOKEN} -o path/to/output/dir --check-all-org-users
+	gorecon srctleaks --config config.yaml
+	gorecon srctleaks --config config.yaml --check-all-org-users
+
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		opts := Options{}
@@ -38,10 +46,8 @@ var Command = &cobra.Command{
 			localio.LogFatal(err, "Could not load Command Opts")
 		}
 
-		if exists, err := localio.Exists(opts.srctleaksOptions.Output); err == nil && !exists {
-			if err = os.MkdirAll(opts.srctleaksOptions.Output, 0750); err != nil {
-				gologger.Fatal().Msgf("Could not mkdir %s\n", err)
-			}
+		if err = os.MkdirAll(opts.srctleaksOptions.Output, 0750); err != nil {
+			gologger.Fatal().Msgf("Could not mkdir %s\n", err)
 		}
 
 		if err = srctleaks.Run(&opts.srctleaksOptions); err != nil {
