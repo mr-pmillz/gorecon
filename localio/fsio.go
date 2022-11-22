@@ -577,6 +577,20 @@ func SortIPs(addrs []string) []string {
 	return sortedIPs
 }
 
+// WriteStringToFile writes a string to a file
+func WriteStringToFile(outputFile, data string) error {
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return LogError(err)
+	}
+	defer out.Close()
+	if _, err = out.WriteString(data); err != nil {
+		return LogError(err)
+	}
+
+	return nil
+}
+
 //// RemoveDuplicateStr removes duplicate strings from a slice of strings
 // func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
 //	allKeys := make(map[string]bool)

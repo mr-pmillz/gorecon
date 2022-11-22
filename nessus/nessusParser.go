@@ -22,11 +22,18 @@ func clearString(str string) string {
 // writeHostsToFile ...
 func writeHostsToFile(pluginName, pluginID, severity, output string, hosts []string) error {
 	outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(pluginName), " "), "-"))
-	absOutputFilePath := fmt.Sprintf("%s/%s_%s_%s-hosts.txt", output, severity, pluginID, outputFileName)
+	absOutputFilePath := fmt.Sprintf("%s/%s_%s-%s-hosts.txt", output, severity, pluginID, outputFileName)
 	if err := localio.WriteLines(hosts, absOutputFilePath); err != nil {
 		return localio.LogError(err)
 	}
 	return nil
+}
+
+type ScanStats struct {
+	TotalCritical int
+	TotalHigh     int
+	TotalMedium   int
+	TotalLow      int
 }
 
 type Row struct {
@@ -50,8 +57,11 @@ func (s bySeverity) Len() int           { return len(s) }
 func (s bySeverity) Less(i, j int) bool { return s[i].value.CVSSBaseScore < s[j].value.CVSSBaseScore }
 func (s bySeverity) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
+// printTable creates a formatted table containing findings sorted from Critical to Low
+// writes table to file and to stdout
 func printTable(n *DataNessus, opts *Options) error {
-	table := tablewriter.NewWriter(os.Stdout)
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
 	table.SetHeader([]string{"Finding", "Plugin ID", "Severity", "Exploit Available", "Count", "Hosts"})
 	table.SetBorder(false)
 
@@ -87,10 +97,11 @@ func printTable(n *DataNessus, opts *Options) error {
 	}
 
 	row := make(bySeverity, 0, len(items))
+	scanStats := &ScanStats{}
 	for finding, info := range items {
 		sortedHosts := localio.SortIPs(affectedHostsPluginID[info[1]])
 		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
-		absOutputFilePathHosts := fmt.Sprintf("%s/%s_%s_%s-hosts.txt", opts.Output, info[2], info[1], outputFileName)
+		absOutputFilePathHosts := fmt.Sprintf("%s/%s_%s-%s-hosts.txt", opts.Output, info[2], info[1], outputFileName)
 		CVSSFloat, _ := strconv.ParseFloat(info[4], 64)
 		row = append(row, Entry{
 			key: finding,
@@ -104,6 +115,7 @@ func printTable(n *DataNessus, opts *Options) error {
 				Hosts:            absOutputFilePathHosts,
 			},
 		})
+		scanStats = setStats(info[2], *scanStats)
 
 		if err := writeHostsToFile(finding, info[1], info[2], opts.Output, sortedHosts); err != nil {
 			return localio.LogError(err)
@@ -138,8 +150,24 @@ func printTable(n *DataNessus, opts *Options) error {
 		tablewriter.ALIGN_CENTER,
 		tablewriter.ALIGN_LEFT,
 	})
+
 	table.SetAutoWrapText(true)
+	table.SetRowLine(true)
+	table.SetFooter([]string{
+		"VULNERABILITY STATS",
+		fmt.Sprintf("Critical: %d", scanStats.TotalCritical),
+		fmt.Sprintf("High: %d", scanStats.TotalHigh),
+		fmt.Sprintf("Medium: %d", scanStats.TotalMedium),
+		fmt.Sprintf("Low: %d", scanStats.TotalLow),
+		fmt.Sprintf("TOTAL: %d", scanStats.TotalCritical+scanStats.TotalHigh+scanStats.TotalMedium+scanStats.TotalLow),
+	})
+	table.SetFooterAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+
+	fmt.Println(tableString.String())
+	if err := localio.WriteStringToFile(fmt.Sprintf("%s/nessus_table_output.txt", opts.Output), tableString.String()); err != nil {
+		return localio.LogError(err)
+	}
 
 	return nil
 }
@@ -160,6 +188,24 @@ func getSeverityColor(severity string) tablewriter.Colors {
 	}
 }
 
+// setStats populates the ScanStats structure
+func setStats(severity string, scanStats ScanStats) *ScanStats {
+	switch severity {
+	case "Critical":
+		scanStats.TotalCritical++
+	case "High":
+		scanStats.TotalHigh++
+	case "Medium":
+		scanStats.TotalMedium++
+	case "Low":
+		scanStats.TotalLow++
+	default:
+		// Do Nothing
+	}
+	return &scanStats
+}
+
+// getNessusData Unmarshals nessus file to *DataNessus struct
 func getNessusData(nessusFile string) (*DataNessus, error) {
 	r := &DataNessus{}
 	nesFile, err := os.OpenFile(nessusFile, os.O_RDWR, os.ModePerm)
@@ -179,6 +225,7 @@ func getNessusData(nessusFile string) (*DataNessus, error) {
 	return r, nil
 }
 
+// Parse parses the nessus file and prints the results table
 func Parse(opts *Options) error {
 	data, err := getNessusData(opts.NessusFile)
 	if err != nil {
