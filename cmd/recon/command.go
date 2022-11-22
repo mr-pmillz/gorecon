@@ -32,7 +32,11 @@ var Command = &cobra.Command{
 	Use:   "recon [--domain|-d example.com]",
 	Args:  cobra.MinimumNArgs(0),
 	Short: "Run recon enumeration",
-	Long:  "Run recon enumeration",
+	Long: `Run recon enumeration
+
+Example Commands:
+	gorecon recon --config config.yaml
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		opts := Options{}

@@ -35,6 +35,7 @@ var Command = &cobra.Command{
 Example Commands:
 	gorecon nessus -n path/to/scan-results.nessus -o path/to/output-dir
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
+	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error

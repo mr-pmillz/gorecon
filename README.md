@@ -35,8 +35,11 @@ Optional recon
 1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
 2. [asnmap](https://github.com/projectdiscovery/asnmap)
 
-The srctleaks sub command discovers public organization repositories and users.
-Then [GitLeaks](https://github.com/zricethezav/gitleaks) is run against all found public repositories.
+- The srctleaks sub command discovers public organization repositories and users.
+  - Then [GitLeaks](https://github.com/zricethezav/gitleaks) is run against all found public repositories.
+
+- The nessus sub command parses a .nessus file, prints a nice table
+  - and writes corresponding host:port to individual findings files
 
 ## Future Feature Presentation
 
@@ -110,10 +113,11 @@ See [config.yaml](config/config.yaml.dist)
 ```shell
 Run recon enumeration
 
+Example Commands:
+        gorecon recon --config config.yaml
+
 Usage:
   gorecon recon [--domain|-d example.com] [flags]
-Example:
-  gorecon recon --config config.yaml
 
 Flags:
       --asn                          if this flag is set, will query primary domain for ASN data via asnmap package
@@ -143,7 +147,13 @@ Also logs Repos and Organization Users to a file and removes repos with no found
 If you're not finding an orgs public GitHub account, you may want to search GitHub manually for the org and then specify the -c flag accordingly
 
 ```shell
-Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets
+Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets.
+
+Example Commands:
+        gorecon srctleaks -c SpyVsSpyEnterprises -d made-up-spy-domain.com --github-token ${GITHUB_TOKEN} -o path/to/output/dir
+        gorecon srctleaks -c SpyVsSpyEnterprises -d made-up-spy-domain.com --github-token ${GITHUB_TOKEN} -o path/to/output/dir --check-all-org-users
+        gorecon srctleaks --config config.yaml
+        gorecon srctleaks --config config.yaml --check-all-org-users
 
 Usage:
   gorecon srctleaks [flags]
@@ -169,6 +179,7 @@ parses nessus file, prints and logs hosts and plugin id data etc.
 Example Commands:
         gorecon nessus -n path/to/scan-results.nessus -o path/to/output-dir
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
+        gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
 
 Usage:
   gorecon nessus [flags]
@@ -177,6 +188,7 @@ Flags:
   -h, --help                 help for nessus
   -n, --nessus-file string   full or relative path to nessus file.nessus
   -o, --output string        report output dir
+      --testssl              runs Testssl.sh against all tls and ssl nessus findings hosts
 
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
