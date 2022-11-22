@@ -25,11 +25,10 @@ func runGitLeaks(repos []string, opts *Options) error {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	cloneDir := fmt.Sprintf("%s/company-repos", opts.Output)
-	if exists, err := localio.Exists(cloneDir); err == nil && !exists {
-		if err = os.MkdirAll(cloneDir, 0750); err != nil {
-			gologger.Fatal().Msgf("Could not mkdir %s\n", err)
-		}
+	if err := os.MkdirAll(cloneDir, 0750); err != nil {
+		gologger.Fatal().Msgf("Could not mkdir %s\n", err)
 	}
+
 	gitLeaksConfig, err := gitLeaksConfigDir.Open("gitleaksconfig/.gitleaks.toml")
 	if err != nil {
 		return localio.LogError(err)

@@ -71,10 +71,8 @@ func EmbedFileCopy(src fs.File, dst string) error {
 		return LogError(err)
 	}
 
-	if exists, err := Exists(filepath.Dir(destFilePath)); err == nil && !exists {
-		if err = os.MkdirAll(filepath.Dir(destFilePath), 0750); err != nil {
-			return LogError(err)
-		}
+	if err = os.MkdirAll(filepath.Dir(destFilePath), 0750); err != nil {
+		return LogError(err)
 	}
 
 	destFile, err := os.Create(destFilePath)
@@ -116,10 +114,8 @@ func CopyFile(src, dest string) error {
 	}
 	defer srcFile.Close()
 
-	if exists, err := Exists(filepath.Dir(dest)); err == nil && !exists {
-		if err = os.MkdirAll(filepath.Dir(dest), 0750); err != nil {
-			return LogError(err)
-		}
+	if err = os.MkdirAll(filepath.Dir(dest), 0750); err != nil {
+		return LogError(err)
 	}
 
 	destFile, err := os.Create(dest)
@@ -136,7 +132,7 @@ func CopyFile(src, dest string) error {
 // TimeTrack ...
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
-	log.Printf("%s \ntook: %s\n", name, elapsed)
+	Infof("%s \ntook: %s\n", name, elapsed)
 }
 
 // RunCommandPipeOutput runs a bash command and pipes the output to stdout in realtime
@@ -208,10 +204,8 @@ func RunCommandsPipeOutput(commands []string) error {
 // WriteStructToJSONFile ...
 func WriteStructToJSONFile(data interface{}, outputFile string) error {
 	outputFileDir := filepath.Dir(outputFile)
-	if exists, err := Exists(outputFileDir); err == nil && !exists {
-		if err = os.MkdirAll(outputFileDir, 0750); err != nil {
-			return LogError(err)
-		}
+	if err := os.MkdirAll(outputFileDir, 0750); err != nil {
+		return LogError(err)
 	}
 
 	f, err := json.MarshalIndent(data, "", "  ")
@@ -488,6 +482,23 @@ func GitClone(url, directory string) error {
 	return nil
 }
 
+// GitCloneDepthOne clones a public git repo url to directory
+func GitCloneDepthOne(url, directory string) error {
+	if exists, err := Exists(directory); err == nil && !exists {
+		gogitex.Info("git clone %s %s", url, directory)
+		_, err := git.PlainClone(directory, false, &git.CloneOptions{
+			URL:      url,
+			Progress: os.Stdout,
+			Depth:    1,
+		})
+		gogitex.CheckIfError(err)
+	} else {
+		fmt.Printf("[+] Repo: %s already exists at %s, skipping... \n", url, directory)
+	}
+
+	return nil
+}
+
 // ReadLines reads a whole file into memory
 // and returns a slice of its lines.
 func ReadLines(path string) ([]string, error) {
@@ -572,9 +583,11 @@ func SortIPs(addrs []string) []string {
 
 	// combine and return
 	left, right = SortIPs(left), SortIPs(right)
-	sortedIPs := append(left, middle...) //nolint:gocritic
+	var sortedIPs []string
+	sortedIPs = append(sortedIPs, left...)
+	sortedIPs = append(sortedIPs, middle...)
 	sortedIPs = append(sortedIPs, right...)
-	return sortedIPs
+	return RemoveDuplicateStr(sortedIPs)
 }
 
 // WriteStringToFile writes a string to a file
@@ -591,15 +604,27 @@ func WriteStringToFile(outputFile, data string) error {
 	return nil
 }
 
-//// RemoveDuplicateStr removes duplicate strings from a slice of strings
-// func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
-//	allKeys := make(map[string]bool)
-//	var list []string
-//	for _, item := range strSlice {
-//		if _, value := allKeys[item]; !value {
-//			allKeys[item] = true
-//			list = append(list, item)
-//		}
-//	}
-//	return list
-//}
+// FilePathWalkDir ...
+func FilePathWalkDir(dirPath string) ([]string, error) {
+	var files []string
+	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
+}
+
+// RemoveDuplicateStr removes duplicate strings from a slice of strings
+func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
+	allKeys := make(map[string]bool)
+	var list []string
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}

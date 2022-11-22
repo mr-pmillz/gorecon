@@ -47,11 +47,10 @@ Example Commands:
 			opts.nessusOptions.Output = "/tmp/parsed_nessus"
 		}
 
-		if exists, err := localio.Exists(opts.nessusOptions.Output); err == nil && !exists {
-			if err = os.MkdirAll(opts.nessusOptions.Output, 0750); err != nil {
-				gologger.Fatal().Msgf("Could not mkdir %s\n", err)
-			}
+		if err = os.MkdirAll(opts.nessusOptions.Output, 0750); err != nil {
+			gologger.Fatal().Msgf("Could not mkdir %s\n", err)
 		}
+
 		if err = nessus.Parse(&opts.nessusOptions); err != nil {
 			localio.LogFatal(err, "Could not parse nessus file")
 		}
