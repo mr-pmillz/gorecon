@@ -62,7 +62,7 @@ Download the compiled binary from [releases](https://github.com/mr-pmillz/goreco
 Or download the program directly with go
 
 ```shell
-go install github.com/mr-pmillz/gorecon@latest
+go install github.com/mr-pmillz/gorecon/v2@latest
 ```
 
 create your [config.yaml](config/config.yaml.dist) file

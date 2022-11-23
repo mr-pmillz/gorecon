@@ -12,7 +12,7 @@ import (
 	"github.com/jpillora/go-tld"
 	"github.com/projectdiscovery/mapcidr"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 type Hosts struct {

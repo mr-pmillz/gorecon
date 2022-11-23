@@ -3,7 +3,7 @@ package nessus
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	"github.com/olekukonko/tablewriter"
 	"io"
 	"os"

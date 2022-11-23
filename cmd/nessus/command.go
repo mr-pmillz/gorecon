@@ -1,8 +1,8 @@
 package nessus
 
 import (
-	"github.com/mr-pmillz/gorecon/localio"
-	"github.com/mr-pmillz/gorecon/nessus"
+	"github.com/mr-pmillz/gorecon/v2/localio"
+	"github.com/mr-pmillz/gorecon/v2/nessus"
 	"github.com/projectdiscovery/gologger"
 	"os"
 

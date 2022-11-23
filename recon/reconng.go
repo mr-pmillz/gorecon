@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 // configureReconNGDependencies installs common missing recon-ng dependencies

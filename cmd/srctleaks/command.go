@@ -1,8 +1,8 @@
 package srctleaks
 
 import (
-	"github.com/mr-pmillz/gorecon/localio"
-	"github.com/mr-pmillz/gorecon/srctleaks"
+	"github.com/mr-pmillz/gorecon/v2/localio"
+	"github.com/mr-pmillz/gorecon/v2/srctleaks"
 	"github.com/projectdiscovery/gologger"
 	"os"
 

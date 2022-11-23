@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 // runDNSRecon runs dnsrecon for all base domains and writes csv output file

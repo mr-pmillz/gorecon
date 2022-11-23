@@ -2,20 +2,23 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/cmd/nessus"
-	"github.com/mr-pmillz/gorecon/cmd/srctleaks"
+	"github.com/mr-pmillz/gorecon/v2/cmd/nessus"
+	"github.com/mr-pmillz/gorecon/v2/cmd/srctleaks"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/mr-pmillz/gorecon/cmd/recon"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/cmd/recon"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+	version = "v2.0.2"
+)
 
 const (
 	defaultConfigFileName = "config"
@@ -24,9 +27,10 @@ const (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "gorecon",
-	Short: "External recon automation tool",
-	Long:  `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!`,
+	Use:     "gorecon",
+	Version: version,
+	Short:   "External recon automation tool",
+	Long:    `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!`,
 }
 
 func init() {

@@ -10,7 +10,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra/doc"
 
-	"github.com/mr-pmillz/gorecon/cmd"
+	"github.com/mr-pmillz/gorecon/v2/cmd"
 )
 
 func main() {

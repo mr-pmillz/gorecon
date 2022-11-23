@@ -6,7 +6,7 @@ import (
 	_ "embed" // single file embed
 	"encoding/json"
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	"os"
 	"strings"
 	"text/template"

@@ -6,7 +6,7 @@ import (
 	"log"
 	"math"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 // runHTTPX runs httpx against a slice of urls ...
