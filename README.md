@@ -94,14 +94,15 @@ For amass, gorecon will generate the scope portions of the config.ini for you
 
 ```ini
 # https://passivedns.cn (Contact)
-#[data_sources.360PassiveDNS]
-#[data_sources.360PassiveDNS.Credentials]
-#apikey =
+[data_sources.360PassiveDNS]
+[data_sources.360PassiveDNS.Credentials]
+apikey = API-KEY-HERE
 
 # https://asnlookup.com (Free)
-#[data_sources.ASNLookup]
-#[data_sources.ASNLookup.Credentials]
-#apikey =
+[data_sources.ASNLookup]
+[data_sources.ASNLookup.Credentials]
+apikey = API-KEY-HERE
+...snippet...
 ```
 
 ## Usage
