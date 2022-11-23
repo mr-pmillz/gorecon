@@ -19,7 +19,8 @@ type Options struct {
 	Workspace               string
 	SubFinderProviderConfig string
 	RunDNSRecon             bool
-	ASN                     bool
+	RunAmass                bool
+	AmassDataSources        string
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -33,7 +34,8 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
 	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
-	cmd.PersistentFlags().BoolP("asn", "", false, "if this flag is set, will query primary domain for ASN data via asnmap package")
+	cmd.PersistentFlags().BoolP("run-amass", "", false, "if this flag is set, will run amass active enumeration and intel modules. Requires asn flag to be set")
+	cmd.PersistentFlags().StringP("amass-data-sources", "", "", "path to a file containing amass data sources you want to use")
 	return nil
 }
 
@@ -48,11 +50,21 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	}
 	opts.Company = company.(string)
 
-	cmdASN, err := cmd.Flags().GetBool("asn")
+	cmdRunAmass, err := cmd.Flags().GetBool("run-amass")
 	if err != nil {
 		return err
 	}
-	opts.ASN = cmdASN
+	opts.RunAmass = cmdRunAmass
+
+	amassDataSources, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
+		Flag:       "amass-data-sources",
+		IsFilePath: true,
+		Opts:       opts.AmassDataSources,
+	})
+	if err != nil {
+		return err
+	}
+	opts.AmassDataSources = amassDataSources.(string)
 
 	cmdDNSRecon, err := cmd.Flags().GetBool("run-dnsrecon")
 	if err != nil {

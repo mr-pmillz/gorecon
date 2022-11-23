@@ -16,60 +16,15 @@ import (
 )
 
 type Hosts struct {
-	Domains    []string
-	SubDomains []string
-	CIDRs      []string
-	IPv4s      []string
-	IPv6s      []string
-	OutOfScope []string
+	Domains              []string
+	SubDomains           []string
+	CIDRs                []string
+	IPv4s                []string
+	IPv6s                []string
+	OutOfScope           []string
+	OutOfScopeSubdomains []string
+	ASNs                 []string
 }
-
-// uncomment when using native katana package for scope control.
-// getOutOfScope ...
-// func getOutOfScope(outtaScope interface{}) ([]string, error) {
-//	outOfScope := []string{"google", "amazon", "amazonaws", "googlemail", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri", "microsoft"}
-//	outOfScopeType := reflect.TypeOf(outtaScope)
-//	switch outOfScopeType.Kind() {
-//	case reflect.Slice:
-//		for _, i := range outtaScope.([]string) {
-//			switch {
-//			case valid.IsCIDR(i):
-//				ips, err := mapcidr.IPAddresses(i)
-//				if err != nil {
-//					return nil, localio.LogError(err)
-//				}
-//				outOfScope = append(outOfScope, ips...)
-//			default:
-//				outOfScope = append(outOfScope, i)
-//			}
-//		}
-//	case reflect.String:
-//		if outtaScope.(string) != "" {
-//			if exists, err := localio.Exists(outtaScope.(string)); exists && err == nil {
-//				outOfScopes, err := localio.ReadLines(outtaScope.(string))
-//				if err != nil {
-//					return nil, err
-//				}
-//				for _, i := range outOfScopes {
-//					switch {
-//					case valid.IsCIDR(i):
-//						ips, err := mapcidr.IPAddresses(i)
-//						if err != nil {
-//							return nil, localio.LogError(err)
-//						}
-//						outOfScope = append(outOfScope, ips...)
-//					default:
-//						outOfScope = append(outOfScope, i)
-//					}
-//				}
-//			} else {
-//				outOfScope = append(outOfScope, outtaScope.(string))
-//			}
-//		}
-//	}
-//
-//	return removeDuplicateStr(outOfScope), nil
-//}
 
 //nolint:gocognit
 //nolint:gocyclo
@@ -80,6 +35,14 @@ func NewScope(opts *Options) (*Hosts, error) {
 	switch outOfScopeType.Kind() {
 	case reflect.Slice:
 		hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.([]string)...)
+		for _, i := range opts.OutOfScope.([]string) {
+			if valid.IsDNSName(i) {
+				d, _ := tld.Parse(fmt.Sprintf("https://%s", i))
+				if d.Subdomain != "" && !localio.Contains(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+					hosts.OutOfScopeSubdomains = append(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
+				}
+			}
+		}
 	case reflect.String:
 		if opts.OutOfScope.(string) != "" {
 			if exists, err := localio.Exists(opts.OutOfScope.(string)); exists && err == nil {
@@ -88,8 +51,22 @@ func NewScope(opts *Options) (*Hosts, error) {
 					return nil, err
 				}
 				hosts.OutOfScope = append(hosts.OutOfScope, outOfScopes...)
+				for _, i := range outOfScopes {
+					if valid.IsDNSName(i) {
+						d, _ := tld.Parse(fmt.Sprintf("https://%s", i))
+						if d.Subdomain != "" && !localio.Contains(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+							hosts.OutOfScopeSubdomains = append(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
+						}
+					}
+				}
 			} else {
 				hosts.OutOfScope = append(hosts.OutOfScope, opts.OutOfScope.(string))
+				if valid.IsDNSName(opts.OutOfScope.(string)) {
+					d, _ := tld.Parse(fmt.Sprintf("https://%s", opts.OutOfScope.(string)))
+					if d.Subdomain != "" && !localio.Contains(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD)) {
+						hosts.OutOfScopeSubdomains = append(hosts.OutOfScopeSubdomains, fmt.Sprintf("%s.%s.%s", d.Subdomain, d.Domain, d.TLD))
+					}
+				}
 			}
 		}
 	}

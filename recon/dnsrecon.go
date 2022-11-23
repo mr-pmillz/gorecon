@@ -45,14 +45,15 @@ func runDNSRecon(domains []string, outputDir string) error {
 		return err
 	}
 
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && python3 -m pip install -r requirements.txt", virtualEnvsDir, toolsDir)); err != nil {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
 		return err
 	}
 
 	for _, domain := range domains {
-		cmd := fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && python3 dnsrecon.py -d %s -t std,axfr,bing,crt -c %s/%s-dnsrecon-results.csv", virtualEnvsDir, toolsDir, domain, outputDir, domain)
+		cmd := fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && dnsrecon -d %s -t std,axfr,bing,crt -c %s/%s-dnsrecon-results.csv", virtualEnvsDir, toolsDir, domain, outputDir, domain)
 		if err := localio.RunCommandPipeOutput(cmd); err != nil {
-			return err
+			// ignore err and continue enumeration
+			localio.LogWarningf("dnsrecon failed :(\n%+v\ncontinuing reconnaissance", err)
 		}
 	}
 
