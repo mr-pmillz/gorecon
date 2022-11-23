@@ -21,6 +21,7 @@ type Options struct {
 	RunDNSRecon             bool
 	RunAmass                bool
 	AmassDataSources        string
+	ASNLookupAPI            string
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -36,6 +37,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
 	cmd.PersistentFlags().BoolP("run-amass", "", false, "if this flag is set, will run amass active enumeration and intel modules. Requires asn flag to be set")
 	cmd.PersistentFlags().StringP("amass-data-sources", "", "", "path to a file containing amass data sources you want to use")
+	cmd.PersistentFlags().StringP("asnlookup-api", "", "", "optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys")
 	return nil
 }
 
@@ -49,6 +51,16 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.Company = company.(string)
+
+	asnLookupAPI, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
+		Flag:       "asnlookup-api",
+		IsFilePath: false,
+		Opts:       opts.ASNLookupAPI,
+	})
+	if err != nil {
+		return err
+	}
+	opts.ASNLookupAPI = asnLookupAPI.(string)
 
 	cmdRunAmass, err := cmd.Flags().GetBool("run-amass")
 	if err != nil {

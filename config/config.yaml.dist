@@ -5,6 +5,7 @@ OUTPUT: "/home/YOUR-USERNAME/work"
 SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
 AMASS_DATA_SOURCES: "/home/YOURUSERNAME/.config/amass/datasources.ini"
 GITHUB_TOKEN: ""
+ASNLOOKUP_API: ""
 DOMAIN: |-
   todo.foo
   www.todo.foo

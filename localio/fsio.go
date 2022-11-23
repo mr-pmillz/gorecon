@@ -3,12 +3,15 @@ package localio
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -646,4 +649,44 @@ func RemoveDuplicateStr(strSlice []string) []string { //nolint:typecheck
 		}
 	}
 	return list
+}
+
+type Client struct {
+	http http.Client
+}
+
+func NewHTTPClient() *Client {
+	// ignore expired SSL certificates
+	transCfg := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+	}
+
+	client := Client{
+		http: http.Client{Transport: transCfg},
+	}
+	return &client
+}
+
+func (c Client) DoReq(u, method string, target interface{}, headers map[string]string, params map[string]string) error {
+	req, err := http.NewRequest(method, u, nil)
+	if err != nil {
+		return LogError(err)
+	}
+	req.Header.Set("Accepts", "application/json")
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+	p := url.Values{}
+	for k, v := range params {
+		p.Add(k, v)
+	}
+	req.URL.RawQuery = p.Encode()
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return LogError(err)
+	}
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(target)
 }

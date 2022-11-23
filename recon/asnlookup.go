@@ -5,10 +5,13 @@ import (
 	"github.com/gocarina/gocsv"
 	"github.com/mr-pmillz/gorecon/localio"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
+	"github.com/projectdiscovery/mapcidr"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,6 +41,16 @@ func hackerTargetASN(ip string) ([]string, error) {
 	return strings.Split(strings.ReplaceAll(string(resBody), "\"", ""), ","), nil
 }
 
+type ASNData struct {
+	AsnHandle  int      `json:"asnHandle,omitempty"`
+	AsnName    string   `json:"asnName,omitempty"`
+	OrgID      string   `json:"orgID,omitempty"`
+	OrgName    string   `json:"orgName,omitempty"`
+	OrgCountry string   `json:"orgCountry,omitempty"`
+	Ipv4Prefix []string `json:"ipv4_prefix,omitempty"`
+	Ipv6Prefix []string `json:"ipv6_prefix,omitempty"`
+}
+
 // getASNByDomain ...
 // This method is unreliable. api.asnmap.sh/api/v1/asnmap?ip=X.X.X.X is unstable.
 func getASNByDomain(opts *Options, domains []string) (*ASNMapScope, error) {
@@ -47,6 +60,7 @@ func getASNByDomain(opts *Options, domains []string) (*ASNMapScope, error) {
 		"1.1.1.1:53", // Cloudflare
 		"8.8.8.8:53", // Google
 	}
+	// use file cache in case data already exists
 	if exists, err := localio.Exists(fmt.Sprintf("%s/%s-ASN-data.csv", opts.Output, opts.Company)); err == nil && exists {
 		f, err := os.OpenFile(fmt.Sprintf("%s/%s-ASN-data.csv", opts.Output, opts.Company), os.O_RDWR, os.ModePerm)
 		if err != nil {
@@ -64,42 +78,59 @@ func getASNByDomain(opts *Options, domains []string) (*ASNMapScope, error) {
 	}
 	defer asnOutputCSVFile.Close()
 
+	c := localio.NewHTTPClient()
 	for _, domain := range domains {
 		localio.Infof("Looking up ASN for: %s", domain)
 		resolvedIPs := asnmap.ResolveDomain(domain, resolvers...)
 		for _, ip := range resolvedIPs {
 			// results := asnmap.GetFormattedDataInCSV(client.GetData(asnmap.IP(ip), asnmap.Domain(domain)))
-			results, err := hackerTargetASN(ip)
-			if err != nil {
-				return nil, localio.LogError(err)
-			}
-			if localio.Contains(results, "API count exceeded - Increase Quota with Membership") {
-				localio.LogWarningf("%+v", strings.Join(results, " "))
-				return &asnmapScope, nil
-			}
-			asnmapScope.DomainASN = append(asnmapScope.DomainASN, ASNMapDomainQueryCSV{
-				Timestamp: time.Now().String(),
-				Input:     results[0],
-				AsNumber:  results[1],
-				AsRange:   results[2],
-				AsName:    results[3],
-				AsCountry: strings.TrimSpace(results[4]),
-			})
-			// for _, result := range results {
-			// asnmapScope.DomainASN = append(asnmapScope.DomainASN, ASNMapDomainQueryCSV{
-			//	Timestamp: result[0],
-			//	Input:     result[1],
-			//	AsNumber:  result[2],
-			//	AsName:    result[3],
-			//	AsCountry: result[4],
-			//	AsRange:   result[len(result)-1],
-			// })
+			if opts.ASNLookupAPI != "" {
+				var asnData []*ASNData
+				headers := map[string]string{
+					"X-RapidAPI-Host": "asn-lookup.p.rapidapi.com",
+					"X-RapidAPI-Key":  opts.ASNLookupAPI,
+				}
+				params := map[string]string{
+					"ip": ip,
+				}
+				if err = c.DoReq("https://asn-lookup.p.rapidapi.com/api", "GET", &asnData, headers, params); err != nil {
+					return nil, localio.LogError(err)
+				}
 
-			//}
+				asnmapScope.DomainASN = append(asnmapScope.DomainASN, ASNMapDomainQueryCSV{
+					Timestamp: time.Now().String(),
+					Input:     ip,
+					AsNumber:  strconv.Itoa(asnData[0].AsnHandle),
+					AsName:    asnData[0].AsnName,
+					AsCountry: asnData[0].OrgCountry,
+					AsRange:   matchCIDR(asnData[0].Ipv4Prefix, ip),
+				})
+			} else {
+				// fall back to free hackertarget api with no keys
+				results, err := hackerTargetASN(ip)
+				if err != nil {
+					return nil, localio.LogError(err)
+				}
+				if localio.Contains(results, "API count exceeded - Increase Quota with Membership") {
+					localio.LogWarningf("%+v", strings.Join(results, " "))
+
+					return &asnmapScope, nil
+				}
+				asnmapScope.DomainASN = append(asnmapScope.DomainASN, ASNMapDomainQueryCSV{
+					Timestamp: time.Now().String(),
+					Input:     results[0],
+					AsNumber:  results[1],
+					AsRange:   results[2],
+					AsName:    results[3],
+					AsCountry: strings.TrimSpace(results[4]),
+				})
+			}
 		}
 	}
-	if err = localio.PrettyPrint(asnmapScope.DomainASN); err != nil {
-		return nil, localio.LogError(err)
+	if len(asnmapScope.DomainASN) != 0 {
+		if err = localio.PrettyPrint(asnmapScope.DomainASN); err != nil {
+			return nil, localio.LogError(err)
+		}
 	}
 
 	if err = gocsv.Marshal(asnmapScope.DomainASN, asnOutputCSVFile); err != nil {
@@ -107,4 +138,24 @@ func getASNByDomain(opts *Options, domains []string) (*ASNMapScope, error) {
 	}
 
 	return &asnmapScope, nil
+}
+
+// matchCIDR ...
+func matchCIDR(cidrSlice []string, ip string) string {
+	var matchedCIDR string
+	var wg sync.WaitGroup
+	wg.Add(len(cidrSlice))
+	for i := 0; i < len(cidrSlice); i++ {
+		go func(i int) {
+			defer wg.Done()
+			ips, _ := mapcidr.IPAddresses(cidrSlice[i])
+			if localio.Contains(ips, ip) {
+				matchedCIDR = cidrSlice[i]
+				return
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	return matchedCIDR
 }
