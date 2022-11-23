@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 
 	"github.com/projectdiscovery/subfinder/v2/pkg/resolve"
 	"github.com/projectdiscovery/subfinder/v2/pkg/runner"

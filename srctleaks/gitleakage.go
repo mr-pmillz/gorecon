@@ -3,7 +3,7 @@ package srctleaks
 import (
 	"embed"
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	"github.com/projectdiscovery/gologger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

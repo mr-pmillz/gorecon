@@ -2,7 +2,7 @@ package nessus
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	"os"
 	"os/exec"
 	"path/filepath"

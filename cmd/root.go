@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/cmd/nessus"
-	"github.com/mr-pmillz/gorecon/cmd/srctleaks"
+	"github.com/mr-pmillz/gorecon/v2/cmd/nessus"
+	"github.com/mr-pmillz/gorecon/v2/cmd/srctleaks"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/mr-pmillz/gorecon/cmd/recon"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/cmd/recon"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 
 	"github.com/spf13/cobra"
 )

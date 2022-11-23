@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 // runGoWitness installs the latest version and runs goWitness

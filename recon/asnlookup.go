@@ -3,7 +3,7 @@ package recon
 import (
 	"fmt"
 	"github.com/gocarina/gocsv"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/mapcidr"
 	"io"

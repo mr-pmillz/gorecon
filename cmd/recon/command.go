@@ -6,7 +6,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra"
 
-	"github.com/mr-pmillz/gorecon/recon"
+	"github.com/mr-pmillz/gorecon/v2/recon"
 )
 
 type reconOptions = recon.Options

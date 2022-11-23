@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 // resolveDomainToIP resolves a domain to IPv4 addresses

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/google/go-github/v48/github"
 	"github.com/jpillora/go-tld"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 	"golang.org/x/oauth2"
 	"reflect"
 	"strings"

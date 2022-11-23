@@ -1,4 +1,4 @@
-module github.com/mr-pmillz/gorecon
+module github.com/mr-pmillz/gorecon/v2
 
 go 1.18
 

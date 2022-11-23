@@ -2,7 +2,7 @@ package srctleaks
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/localio"
+	"github.com/mr-pmillz/gorecon/v2/localio"
 )
 
 func Run(opts *Options) error {
