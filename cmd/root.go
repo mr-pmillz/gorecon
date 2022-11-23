@@ -15,7 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+	version = "v2.0.2"
+)
 
 const (
 	defaultConfigFileName = "config"
@@ -24,9 +27,10 @@ const (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "gorecon",
-	Short: "External recon automation tool",
-	Long:  `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!`,
+	Use:     "gorecon",
+	Version: version,
+	Short:   "External recon automation tool",
+	Long:    `Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!`,
 }
 
 func init() {
