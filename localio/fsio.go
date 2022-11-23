@@ -96,9 +96,17 @@ func Exists(path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_, err = os.Stat(absPath)
+	info, err := os.Stat(absPath)
 	if err == nil {
-		return true, nil
+		switch {
+		case info.IsDir():
+			return true, nil
+		case info.Size() != 0:
+			return true, nil
+		case info.Size() == 0:
+			// file exists but it's empty
+			return false, nil
+		}
 	}
 	if os.IsNotExist(err) {
 		return false, nil
@@ -531,6 +539,17 @@ func WriteLines(lines []string, path string) error {
 		}
 	}
 	return w.Flush()
+}
+
+// CopyStringToFile ...
+func CopyStringToFile(data, dest string) error {
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+	_, err = destFile.WriteString(data)
+	return err
 }
 
 func OrderIPPair(firstIP string, secondIP string) [2]string {

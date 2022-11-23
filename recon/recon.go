@@ -3,6 +3,7 @@ package recon
 import (
 	"fmt"
 	"github.com/mr-pmillz/gorecon/localio"
+	"strconv"
 )
 
 // RunAllRecon ...
@@ -13,11 +14,26 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return localio.LogError(err)
 	}
 
-	if opts.ASN {
-		// TODO: can feed the primary ASNs to other tools as a later on feature such as amass etc...
-		_, err := getASNByDomain(opts)
+	if opts.RunAmass {
+		asnInfo, err := getASNByDomain(opts, h.Domains)
 		if err != nil {
 			return localio.LogError(err)
+		}
+		amassData, err := runAmass(opts, h, asnInfo)
+		if err != nil {
+			return localio.LogError(err)
+		}
+		if amassData != nil {
+			for _, i := range amassData.Data {
+				if !localio.Contains(h.Domains, i.Name) {
+					h.SubDomains = append(h.SubDomains, i.Name)
+				}
+				for _, j := range i.Addresses {
+					if !localio.Contains(h.ASNs, strconv.Itoa(j.Asn)) {
+						h.ASNs = append(h.ASNs, strconv.Itoa(j.Asn))
+					}
+				}
+			}
 		}
 	}
 

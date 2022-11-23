@@ -17,7 +17,9 @@ Table of Contents
   * [Future Feature Presentation](#future-feature-presentation)
   * [Docs](#docs)
   * [Installation](#installation)
+    * [Amass](#amass)
   * [Usage](#usage)
+  * [recon](#recon)
   * [srctleaks](#srctleaks)
   * [Nessus Parser](#nessus-parser)
 
@@ -33,7 +35,7 @@ Currently, the recon sub command runs the following tools in this order
 
 Optional recon
 1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
-2. [asnmap](https://github.com/projectdiscovery/asnmap)
+2. [Amass](https://github.com/OWASP/Amass)
 
 - The srctleaks sub command discovers public organization repositories and users.
   - Then [GitLeaks](https://github.com/zricethezav/gitleaks) is run against all found public repositories.
@@ -81,6 +83,27 @@ SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
 
 Missing provider keys will just be skipped and free ones will be used.
 
+### Amass
+For amass, gorecon will generate the scope portions of the config.ini for you
+- you can provide your own data sources file containing api keys which will be combined into the [base-template](recon/templates/amass-config.ini)
+  - see [Amass-Config](https://github.com/OWASP/Amass/blob/master/examples/config.ini) for all the available options
+  - The base-template config.ini is embedded into the gorecon binary using the embed pkg
+  - if you want to make a change open up an issue or make a pull request.
+  - put your Amass data-sources in a file and point to it with either an env variable, gorecon's config.yaml, or the --amass-data-sources argument.
+    - the contents of the AMASS_DATA_SOURCES|--amass-data-sources file should be like the following example:
+
+```ini
+# https://passivedns.cn (Contact)
+#[data_sources.360PassiveDNS]
+#[data_sources.360PassiveDNS.Credentials]
+#apikey =
+
+# https://asnlookup.com (Free)
+#[data_sources.ASNLookup]
+#[data_sources.ASNLookup.Credentials]
+#apikey =
+```
+
 ## Usage
 
 Gorecon supports yaml configuration files along with cli arguments. Cli args should override values in the configuration file.
@@ -120,7 +143,7 @@ Usage:
   gorecon recon [--domain|-d example.com] [flags]
 
 Flags:
-      --asn                          if this flag is set, will query primary domain for ASN data via asnmap package
+      --amass-data-sources string    path to a file containing amass data sources you want to use
   -c, --company string               company name that your testing
       --creator string               report creator
   -d, --domain string                domain string or file containing domains ex. domains.txt
@@ -129,6 +152,7 @@ Flags:
   -n, --netblock string              CIDRs you wish to scan
       --out-of-scope string          out of scope domains, IPs, or CIDRs
   -o, --output string                report output dir
+      --run-amass                    if this flag is set, will run amass active enumeration and intel modules. Requires asn flag to be set
       --run-dnsrecon                 if this flag is specified, dnsrecon will be ran in addition to default enumeration
       --subfinder-keys-file string   file path to subfinder provider config containing api keys
   -w, --workspace string             workspace name, use one word
