@@ -17,7 +17,7 @@ import (
 
 var (
 	cfgFile string
-	version = "v2.0.2"
+	version = "v2.0.4"
 )
 
 const (
