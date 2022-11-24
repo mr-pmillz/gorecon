@@ -196,6 +196,13 @@ func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { /
 	ignoreHosts := []string{"google", "amazon", "amazonaws", "googlemail", "*", "googlehosted", "cloudfront", "cloudflare", "fastly", "akamai", "sucuri"}
 	ignoreHosts = append(ignoreHosts, h.OutOfScope...)
 
+	for _, subdomain := range h.SubDomains {
+		if !localio.Contains(ignoreHosts, subdomain) {
+			urls = append(urls, fmt.Sprintf("http://%s", subdomain))
+			urls = append(urls, fmt.Sprintf("https://%s", subdomain))
+		}
+	}
+
 	// create http and https urls from found hosts
 	for _, host := range scope.Hosts {
 		if !localio.ContainsChars(ignoreHosts, host.Host) && !localio.ContainsChars(ignoreHosts, host.IP) && host.Host != "" && host.IP != "" {
