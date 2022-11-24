@@ -47,7 +47,7 @@ Optional recon
 
 As an optional feature ToDo:
 - Add a docker-compose.yml to spin up a local elasticsearch and kibana instance
-- Then push results to elastic and create nice reports  ¯\_(ツ)_/¯ :man_shrugging:
+- Then push results to elastic and create nice reports  ¯\\_(ツ)_/¯
 
 ## Docs
 
@@ -63,6 +63,14 @@ Or download the program directly with go
 
 ```shell
 go install github.com/mr-pmillz/gorecon/v2@latest
+```
+
+some golang tools in this project (gowitness) that don't have a pkg available to implement natively rely on go module installation, make sure "$GOPATH/bin" is in your PATH env var.
+ex. if not in your path, add it to your .bash_profile or ~/.zshrc or ~/.bashrc etc..
+```bash
+export PATH="$PATH:$GOPATH/bin"
+# or if you know the full path and dont have $GOPATH set, can do something like:
+export PATH="$PATH:/home/username/go/bin"
 ```
 
 create your [config.yaml](config/config.yaml.dist) file
@@ -145,6 +153,7 @@ Usage:
 
 Flags:
       --amass-data-sources string    path to a file containing amass data sources you want to use
+      --asnlookup-api string         optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys
   -c, --company string               company name that your testing
       --creator string               report creator
   -d, --domain string                domain string or file containing domains ex. domains.txt
@@ -153,7 +162,7 @@ Flags:
   -n, --netblock string              CIDRs you wish to scan
       --out-of-scope string          out of scope domains, IPs, or CIDRs
   -o, --output string                report output dir
-      --run-amass                    if this flag is set, will run amass active enumeration and intel modules. Requires asn flag to be set
+      --run-amass                    if this flag is set, will run amass active enumeration
       --run-dnsrecon                 if this flag is specified, dnsrecon will be ran in addition to default enumeration
       --subfinder-keys-file string   file path to subfinder provider config containing api keys
   -w, --workspace string             workspace name, use one word

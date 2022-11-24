@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mr-pmillz/gorecon/v2/localio"
+	"github.com/mr-pmillz/tail"
 	"os"
 	"strings"
 	"text/template"
@@ -81,6 +82,12 @@ func parseAmassResults(jsonFilePath string) (*AmassResults, error) {
 	return &amassResults, nil
 }
 
+// cleanupTail cleans up tail process.
+func cleanupTail(t *tail.Tail) {
+	_ = t.Stop()
+	defer t.Cleanup()
+}
+
 // runAmass ...
 func runAmass(opts *Options, scope *Hosts, asnInfo *ASNMapScope) (*AmassResults, error) {
 	amassConfig, err := setupAmass(opts, scope, asnInfo)
@@ -90,13 +97,38 @@ func runAmass(opts *Options, scope *Hosts, asnInfo *ASNMapScope) (*AmassResults,
 
 	jsonOutput := fmt.Sprintf("%s/amass/enum.json", opts.Output)
 	textOutput := fmt.Sprintf("%s/amass/enum.txt", opts.Output)
+	amassTXT := fmt.Sprintf("%s/amass/amass.txt", opts.Output)
+	// ensure output files are removed in case of re-running with same output dir.
+	for _, f := range []string{jsonOutput, textOutput, amassTXT} {
+		if exists, err := localio.Exists(f); err == nil && exists {
+			if err = os.Remove(f); err != nil {
+				localio.LogWarningf("couldn't remove file: %s\n%+v", f, err)
+			}
+		}
+	}
+
 	enumCMD := fmt.Sprintf("amass enum -config %s -ipv4 -noalts -norecursive -json %s &> %s", amassConfig, jsonOutput, textOutput)
-	localio.Infof("Running Amass... This command takes a while so be patient")
+	localio.Infof("Running Amass. This command takes a while, around 10 - 20 minutes depending on the size of the target network.\nBe patient. Tailing this funky file for you!")
+	// tail amass' output for show while you report for dough!
+	t, err := tail.TailFile(textOutput, tail.Config{
+		MustExist: false,
+		Follow:    true,
+	})
+	if err != nil {
+		localio.LogWarningf("couldn't tail file: %s\n%+v", amassTXT, err)
+	}
+	go func() {
+		for line := range t.Lines {
+			fmt.Println(line.Text)
+		}
+	}()
+
 	if err = localio.RunCommandPipeOutput(enumCMD); err != nil {
 		// if amass fails, ignore error and continue reconnaissance
 		localio.LogWarningf("problem running amass\n%s\n%+v\ncontinuing recon", enumCMD, err)
 		return nil, nil
 	}
+	cleanupTail(t)
 	// show the results
 	if err = localio.RunCommandPipeOutput(fmt.Sprintf("amass db -config %s -show -ip", amassConfig)); err != nil {
 		localio.LogWarningf("couldn't show amass db results:\n %+v", err)

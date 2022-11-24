@@ -203,6 +203,13 @@ func GenerateURLs(scope *NGScope, h *Hosts, subs []string) ([]string, error) { /
 		}
 	}
 
+	for _, ip := range h.IPv4s {
+		if !localio.Contains(ignoreHosts, ip) {
+			urls = append(urls, fmt.Sprintf("http://%s", ip))
+			urls = append(urls, fmt.Sprintf("https://%s", ip))
+		}
+	}
+
 	// create http and https urls from found hosts
 	for _, host := range scope.Hosts {
 		if !localio.ContainsChars(ignoreHosts, host.Host) && !localio.ContainsChars(ignoreHosts, host.IP) && host.Host != "" && host.IP != "" {

@@ -32,6 +32,9 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 					if !localio.Contains(h.ASNs, strconv.Itoa(j.Asn)) {
 						h.ASNs = append(h.ASNs, strconv.Itoa(j.Asn))
 					}
+					if !localio.Contains(h.IPv4s, j.IP) {
+						h.IPv4s = append(h.IPv4s, j.IP)
+					}
 				}
 			}
 		}

@@ -35,7 +35,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringP("out-of-scope", "", "", "out of scope domains, IPs, or CIDRs")
 	cmd.PersistentFlags().StringP("subfinder-keys-file", "", "", "file path to subfinder provider config containing api keys")
 	cmd.PersistentFlags().BoolP("run-dnsrecon", "", false, "if this flag is specified, dnsrecon will be ran in addition to default enumeration")
-	cmd.PersistentFlags().BoolP("run-amass", "", false, "if this flag is set, will run amass active enumeration and intel modules. Requires asn flag to be set")
+	cmd.PersistentFlags().BoolP("run-amass", "", false, "if this flag is set, will run amass active enumeration")
 	cmd.PersistentFlags().StringP("amass-data-sources", "", "", "path to a file containing amass data sources you want to use")
 	cmd.PersistentFlags().StringP("asnlookup-api", "", "", "optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys")
 	return nil

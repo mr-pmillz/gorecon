@@ -57,19 +57,8 @@ func getASNByDomain(opts *Options, domains []string) (*ASNMapScope, error) {
 	asnmapScope := ASNMapScope{}
 	// client := asnmap.NewClient()
 	resolvers := []string{
-		"1.1.1.1:53", // Cloudflare
 		"8.8.8.8:53", // Google
-	}
-	// use file cache in case data already exists
-	if exists, err := localio.Exists(fmt.Sprintf("%s/%s-ASN-data.csv", opts.Output, opts.Company)); err == nil && exists {
-		f, err := os.OpenFile(fmt.Sprintf("%s/%s-ASN-data.csv", opts.Output, opts.Company), os.O_RDWR, os.ModePerm)
-		if err != nil {
-			return nil, localio.LogError(err)
-		}
-		defer f.Close()
-		if err = gocsv.Unmarshal(f, &asnmapScope); err != nil {
-			return &asnmapScope, nil
-		}
+		"8.8.4.4:53", // Cloudflare
 	}
 
 	asnOutputCSVFile, err := os.OpenFile(fmt.Sprintf("%s/%s-ASN-data.csv", opts.Output, opts.Company), os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
