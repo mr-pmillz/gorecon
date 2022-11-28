@@ -206,6 +206,7 @@ func installMarketPlaceModules(workspace string) error {
 	return nil
 }
 
+// insertCompany ...
 func insertCompany(workspace, company string) error {
 	command := fmt.Sprintf("recon-cli -w %s -C \"db query insert into companies (company) select '%s' where not exists (select 1 from companies where company='%s');\"", workspace, company, company)
 	if err := localio.RunCommandPipeOutput(command); err != nil {
@@ -214,11 +215,30 @@ func insertCompany(workspace, company string) error {
 	return nil
 }
 
-func insertDomains(workspace string, domains []string) error {
+// insertDomains ...
+func insertDomains(workspace string, domains []string, primaryDomainIsSubdomain bool) error {
+	// keep count to prevent too many domains from being inserted into the recon-ng domains db table
+	// TODO: improve reconng.go scope handling of *Hosts Structure.
+	count := 0
+	var insertedDomains []string
 	for _, i := range domains {
-		command := fmt.Sprintf("recon-cli -w %s \"-C db query insert into domains (domain) select '%s' where not exists (select 1 from domains where domain='%s');\"", workspace, i, i)
-		if err := localio.RunCommandPipeOutput(command); err != nil {
-			return err
+		switch {
+		case count >= 3:
+			break
+		case isBaseDomain(i) && !primaryDomainIsSubdomain && !localio.Contains(insertedDomains, i):
+			count++
+			command := fmt.Sprintf("recon-cli -w %s \"-C db query insert into domains (domain) select '%s' where not exists (select 1 from domains where domain='%s');\"", workspace, i, i)
+			if err := localio.RunCommandPipeOutput(command); err != nil {
+				return err
+			}
+			insertedDomains = append(insertedDomains, i)
+		case !isBaseDomain(i) && primaryDomainIsSubdomain && !localio.Contains(insertedDomains, i):
+			count++
+			command := fmt.Sprintf("recon-cli -w %s \"-C db query insert into domains (domain) select '%s' where not exists (select 1 from domains where domain='%s');\"", workspace, i, i)
+			if err := localio.RunCommandPipeOutput(command); err != nil {
+				return err
+			}
+			insertedDomains = append(insertedDomains, i)
 		}
 	}
 
@@ -318,16 +338,16 @@ func generateReport(workspace, creator, company, output string) (*CsvReportFiles
 }
 
 // setupWorkspace configures the recon-ng workspace and installs all modules.
-func setupWorkspace(workspace, company string, domains, subs, netblocks []string) error {
+func setupWorkspace(workspace, company string, domains, subs, netblocks []string, primaryDomainIsSubdomain bool) error {
 	if err := insertCompany(workspace, company); err != nil {
 		return err
 	}
 
-	if err := insertDomains(workspace, domains); err != nil {
+	if err := insertDomains(workspace, domains, primaryDomainIsSubdomain); err != nil {
 		return err
 	}
 
-	if err := insertDomains(workspace, subs); err != nil {
+	if err := insertDomains(workspace, subs, primaryDomainIsSubdomain); err != nil {
 		return err
 	}
 
@@ -352,7 +372,7 @@ func setupWorkspace(workspace, company string, domains, subs, netblocks []string
 // ThoroughReconNG Runs recon-ng a second time inserting any new base domains if found.
 // If no new base domains were found. Skip.
 func (h *Hosts) ThoroughReconNG(opts *Options) (*CsvReportFiles, error) {
-	if err := insertDomains(opts.Workspace, h.Domains); err != nil {
+	if err := insertDomains(opts.Workspace, h.Domains, opts.PrimaryDomainIsSubdomain); err != nil {
 		return nil, err
 	}
 
@@ -386,7 +406,7 @@ func (h *Hosts) ThoroughReconNG(opts *Options) (*CsvReportFiles, error) {
 // RunReconNG runs all specified modules against the target domain
 func (h *Hosts) RunReconNG(opts *Options) (*CsvReportFiles, error) {
 	localio.PrintInfo("workspace", opts.Workspace, "Running Recon-ng")
-	if err := setupWorkspace(opts.Workspace, opts.Company, h.Domains, h.SubDomains, h.CIDRs); err != nil {
+	if err := setupWorkspace(opts.Workspace, opts.Company, h.Domains, h.SubDomains, h.CIDRs, opts.PrimaryDomainIsSubdomain); err != nil {
 		return nil, err
 	}
 

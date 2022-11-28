@@ -600,3 +600,11 @@ func (h *Hosts) isDomainInScope(domain string) bool {
 	}
 	return false
 }
+
+// isBaseDomain checks if the domain param is a root domain
+// simple check if domain contains two parts split by a period char.
+// can be improved.
+func isBaseDomain(domain string) bool {
+	parts := strings.Split(domain, ".")
+	return len(parts) == 2
+}

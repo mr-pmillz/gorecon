@@ -9,19 +9,20 @@ import (
 )
 
 type Options struct {
-	Company                 string
-	Creator                 string
-	Domain                  interface{}
-	Modules                 interface{}
-	NetBlock                interface{}
-	OutOfScope              interface{}
-	Output                  string
-	Workspace               string
-	SubFinderProviderConfig string
-	RunDNSRecon             bool
-	RunAmass                bool
-	AmassDataSources        string
-	ASNLookupAPI            string
+	Company                  string
+	Creator                  string
+	Domain                   interface{}
+	Modules                  interface{}
+	NetBlock                 interface{}
+	OutOfScope               interface{}
+	Output                   string
+	Workspace                string
+	SubFinderProviderConfig  string
+	RunDNSRecon              bool
+	RunAmass                 bool
+	AmassDataSources         string
+	ASNLookupAPI             string
+	PrimaryDomainIsSubdomain bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -38,6 +39,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().BoolP("run-amass", "", false, "if this flag is set, will run amass active enumeration")
 	cmd.PersistentFlags().StringP("amass-data-sources", "", "", "path to a file containing amass data sources you want to use")
 	cmd.PersistentFlags().StringP("asnlookup-api", "", "", "optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys")
+	cmd.PersistentFlags().BoolP("primary-domain-is-subdomain", "", false, "if this flag is set, recon-ng will accept subdomains for the primary domain database")
 	return nil
 }
 
@@ -67,6 +69,12 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.RunAmass = cmdRunAmass
+
+	cmdPrimaryDomainIsSubdomain, err := cmd.Flags().GetBool("primary-domain-is-subdomain")
+	if err != nil {
+		return err
+	}
+	opts.PrimaryDomainIsSubdomain = cmdPrimaryDomainIsSubdomain
 
 	amassDataSources, err := localio.ConfigureFlagOpts(cmd, &localio.LoadFromCommandOpts{
 		Flag:       "amass-data-sources",
