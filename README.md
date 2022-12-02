@@ -150,20 +150,21 @@ Usage:
   gorecon recon [--domain|-d example.com] [flags]
 
 Flags:
-      --amass-data-sources string    path to a file containing amass data sources you want to use
-      --asnlookup-api string         optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys
-  -c, --company string               company name that your testing
-      --creator string               report creator
-  -d, --domain string                domain string or file containing domains ex. domains.txt
-  -h, --help                         help for recon
-  -m, --modules string               list of recon-ng modules you want to run for domains and hosts
-  -n, --netblock string              CIDRs you wish to scan
-      --out-of-scope string          out of scope domains, IPs, or CIDRs
-  -o, --output string                report output dir
-      --run-amass                    if this flag is set, will run amass active enumeration
-      --run-dnsrecon                 if this flag is specified, dnsrecon will be ran in addition to default enumeration
-      --subfinder-keys-file string   file path to subfinder provider config containing api keys
-  -w, --workspace string             workspace name, use one word
+      --amass-data-sources string     path to a file containing amass data sources you want to use
+      --asnlookup-api string          optional api key for ASN lookups, is free. see https://docs.rapidapi.com/docs/keys
+  -c, --company string                company name that your testing
+      --creator string                report creator
+  -d, --domain string                 domain string or file containing domains ex. domains.txt
+  -h, --help                          help for recon
+  -m, --modules string                list of recon-ng modules you want to run for domains and hosts
+  -n, --netblock string               CIDRs you wish to scan
+      --out-of-scope string           out of scope domains, IPs, or CIDRs
+  -o, --output string                 report output dir
+      --primary-domain-is-subdomain   if this flag is set, recon-ng will accept subdomains for the primary domain database
+      --run-amass                     if this flag is set, will run amass active enumeration
+      --run-dnsrecon                  if this flag is specified, dnsrecon will be ran in addition to default enumeration
+      --subfinder-keys-file string    file path to subfinder provider config containing api keys
+  -w, --workspace string              workspace name, use one word
 
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
