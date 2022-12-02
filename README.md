@@ -37,11 +37,9 @@ Optional recon
 1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
 2. [Amass](https://github.com/OWASP/Amass)
 
-- The srctleaks sub command discovers public organization repositories and users.
-  - Then [GitLeaks](https://github.com/zricethezav/gitleaks) is run against all found public repositories.
+**Brought to you by:**
 
-- The nessus sub command parses a .nessus file, prints a nice table
-  - and writes corresponding host:port to individual findings files
+![Black Hills Information Security](https://www.blackhillsinfosec.com/wp-content/uploads/2016/03/BHIS-logo-L-300x300.png "Black Hills Information Security")
 
 ## Future Feature Presentation
 
@@ -51,10 +49,10 @@ As an optional feature ToDo:
 
 ## Docs
 
-  * [gorecon](docs/gorecon.md)                         - Automate external recon.
-  * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
-  * [gorecon srctleaks](docs/gorecon_srctleaks.md)     - Run Gitleaks against discovered public organization repositories.
-  * [gorecon nessus](docs/gorecon_nessus.md)           - Parses a .nessus file, prints nice table and writes relevant hosts:ports to corresponding findings files
+* [gorecon](docs/gorecon.md)                         - Automate external recon.
+* [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
+* [gorecon srctleaks](docs/gorecon_srctleaks.md)     - Run Gitleaks against discovered public organization repositories.
+* [gorecon nessus](docs/gorecon_nessus.md)           - Parses a .nessus file, prints nice table and writes relevant hosts:ports to corresponding findings files
 
 ## Installation
 

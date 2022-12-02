@@ -443,8 +443,9 @@ func WriteHttpxURLsToFile(csvFilePath, outputDir string) (string, error) {
 	}
 
 	outputFilePath := fmt.Sprintf("%s/httpx-responsive-urls.txt", outputDir)
+	uniqueURLs := removeDuplicateStr(urls)
 
-	if err = localio.WriteLines(urls, outputFilePath); err != nil {
+	if err = localio.WriteLines(uniqueURLs, outputFilePath); err != nil {
 		return "", err
 	}
 

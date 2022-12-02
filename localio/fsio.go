@@ -591,8 +591,15 @@ func SortIPs(addrs []string) []string {
 	var left []string   // for IPs<pivot
 	var middle []string // for IPs=pivot
 	var right []string  // for IPs>pivot
+	var hosts []string // edge case Hostnames
 
 	for _, ip := range addrs {
+		// edge case where item in addrs is a hostname and not an IPv4
+		hostNoPort := strings.Split(ip, ":")[0]
+		if !valid.IsIP(hostNoPort) {
+			hosts = append(hosts, ip)
+			continue
+		}
 		switch {
 		case OrderIPPair(ip, pivot)[0] == ip:
 			left = append(left, ip)
@@ -609,6 +616,7 @@ func SortIPs(addrs []string) []string {
 	sortedIPs = append(sortedIPs, left...)
 	sortedIPs = append(sortedIPs, middle...)
 	sortedIPs = append(sortedIPs, right...)
+	sortedIPs = append(sortedIPs, hosts...)
 	return RemoveDuplicateStr(sortedIPs)
 }
 
