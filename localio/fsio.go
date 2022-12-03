@@ -336,6 +336,7 @@ type LoadFromCommandOpts struct {
 
 // ConfigureFlagOpts sets the cobra flag option to the LoadFromCommandOpts.Opts key
 // it returns the parsed value of the cobra flag from LoadFromCommandOpts.Flag
+//
 //nolint:gocognit
 func ConfigureFlagOpts(cmd *cobra.Command, lfcOpts *LoadFromCommandOpts) (interface{}, error) {
 	cmdFlag, err := cmd.Flags().GetString(fmt.Sprintf("%s%s", lfcOpts.Prefix, lfcOpts.Flag))
@@ -579,8 +580,8 @@ func OrderIPPair(firstIP string, secondIP string) [2]string {
 	return [2]string{secondIP, firstIP}
 }
 
-// SortIPs sorts IP addresses of an array in asc. order (quicksort)
-func SortIPs(addrs []string) []string {
+// SortHosts sorts host:port addresses of an array in asc. order (quicksort)
+func SortHosts(addrs []string) []string {
 	// recursion base case
 	if len(addrs) < 2 {
 		return addrs
@@ -591,7 +592,7 @@ func SortIPs(addrs []string) []string {
 	var left []string   // for IPs<pivot
 	var middle []string // for IPs=pivot
 	var right []string  // for IPs>pivot
-	var hosts []string // edge case Hostnames
+	var hosts []string  // edge case Hostnames
 
 	for _, ip := range addrs {
 		// edge case where item in addrs is a hostname and not an IPv4
@@ -611,7 +612,7 @@ func SortIPs(addrs []string) []string {
 	}
 
 	// combine and return
-	left, right = SortIPs(left), SortIPs(right)
+	left, right = SortHosts(left), SortHosts(right)
 	var sortedIPs []string
 	sortedIPs = append(sortedIPs, left...)
 	sortedIPs = append(sortedIPs, middle...)

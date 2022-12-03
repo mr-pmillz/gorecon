@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mr-pmillz/gorecon/v2/localio"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -17,16 +18,20 @@ func runKatana(urlsFile string, opts *Options) error {
 	if err != nil {
 		return localio.LogError(err)
 	}
+	// TODO optimize regex
 	ignoreRegex := "(.+)(\\.css\\?.*|[\\.js]\\?.*|assets\\/.*|images\\/.*|img\\/.*|static\\/.*|\\.js|\\.css)"
 
 	if katanaBin, exists := localio.CommandExists("katana"); exists {
+		if err = os.MkdirAll(fmt.Sprintf("%s/katana", opts.Output), os.ModePerm); err != nil {
+			return localio.LogError(err)
+		}
 		for _, u := range urls {
 			urlParts, err := url.Parse(u)
 			if err != nil {
 				localio.LogWarningf("URL invalid: %s", u)
 				continue
 			}
-			outputFile := fmt.Sprintf("%s/katana-%s.txt", opts.Output, strings.Split(urlParts.Host, ":")[0])
+			outputFile := fmt.Sprintf("%s/katana/katana-%s.txt", opts.Output, strings.Split(urlParts.Host, ":")[0])
 			command := fmt.Sprintf("%s -u %s -jc -v -hl -nos -c 40 -p 40 -ef png,css,svg,js,jpg -cos '%s' -o %s", katanaBin, u, ignoreRegex, outputFile)
 			if err = localio.RunCommandPipeOutput(command); err != nil {
 				return localio.LogError(err)

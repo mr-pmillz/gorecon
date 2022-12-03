@@ -1,4 +1,4 @@
-# Gorecon
+# GoRecon
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/mr-pmillz/gorecon)](https://goreportcard.com/report/github.com/mr-pmillz/gorecon)
 ![GitHub all releases](https://img.shields.io/github/downloads/mr-pmillz/gorecon/total?style=social)
@@ -11,7 +11,7 @@
 Table of Contents
 =================
 
-* [Gorecon](#gorecon)
+* [GoRecon](#gorecon)
 * [Table of Contents](#table-of-contents)
   * [About](#about)
   * [Future Feature Presentation](#future-feature-presentation)
@@ -63,7 +63,7 @@ Or download the program directly with go
 go install github.com/mr-pmillz/gorecon/v2@latest
 ```
 
-some golang tools in this project (gowitness) that don't have a pkg available to implement natively rely on go module installation, make sure "$GOPATH/bin" is in your PATH env var.
+some golang tools in this project (for instance, gowitness) that don't have a pkg available to implement natively rely on go module installation, make sure "$GOPATH/bin" is in your PATH env var.
 ex. if not in your path, add it to your .bash_profile or ~/.zshrc or ~/.bashrc etc..
 ```bash
 export PATH="$PATH:$GOPATH/bin"
@@ -90,7 +90,7 @@ SUBFINDER_KEYS_FILE: "/home/YOURUSERNAME/.config/subfinder/provider-config.yaml"
 Missing provider keys will just be skipped and free ones will be used.
 
 ### Amass
-For amass, gorecon will generate the scope portions of the config.ini for you
+For Amass, GoRecon will generate the scope portions of the config.ini for you
 - you can provide your own data sources file containing api keys which will be combined into the [base-template](recon/templates/amass-config.ini)
   - see [Amass-Config](https://github.com/OWASP/Amass/blob/master/examples/config.ini) for all the available options
   - The base-template config.ini is embedded into the gorecon binary using the embed pkg
@@ -113,7 +113,7 @@ apikey = API-KEY-HERE
 
 ## Usage
 
-Gorecon supports yaml configuration files along with cli arguments. Cli args should override values in the configuration file.
+GoRecon supports yaml configuration files along with cli arguments. Cli args should override values in the configuration file.
 
 ```shell
 Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!
@@ -135,7 +135,7 @@ Flags:
 Use "gorecon [command] --help" for more information about a command.
 ```
 
-Run gorecon from a yaml configuration file.
+Run GoRecon from a yaml configuration file.
 See [config.yaml](config/config.yaml.dist)
 
 ## recon
@@ -213,14 +213,18 @@ Example Commands:
         gorecon nessus -n path/to/scan-results.nessus -o path/to/output-dir
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
+        gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap
+        gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --stream-nmap
 
 Usage:
   gorecon nessus [flags]
 
 Flags:
+      --async-nmap           runs nmap asynchronously in 5 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts
   -h, --help                 help for nessus
   -n, --nessus-file string   full or relative path to nessus file.nessus
   -o, --output string        report output dir
+      --stream-nmap          streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts
       --testssl              runs Testssl.sh against all tls and ssl nessus findings hosts
 
 Global Flags:
