@@ -115,6 +115,7 @@ func runTestSSL(outputDir string, verbose bool) error {
 
 // writeAllSslTlsHostsToFile writes all sorted unique ssl and tls hosts to a file
 // returns a slice of sorted ssl and tls IPs.
+// TODO don't generate TLS/SSL hosts from files, grab directly from parsed nessus. TODO
 func writeAllSslTLSHostsToFile(outputDir string) ([]string, error) {
 	files, err := localio.FilePathWalkDir(outputDir)
 	if err != nil {
@@ -125,7 +126,7 @@ func writeAllSslTLSHostsToFile(outputDir string) ([]string, error) {
 	for _, f := range files {
 		base := filepath.Base(f)
 		parts := strings.Split(base, "-")
-		if base != "all-tls-ssl-hosts.txt" {
+		if base != "all-tls-ssl-hosts.txt" && !strings.Contains(base, "no-ports") {
 			if localio.Contains(parts, "ssl") || localio.Contains(parts, "tls") {
 				if ips, err := localio.ReadLines(f); err == nil {
 					sslTLSHosts = append(sslTLSHosts, ips...)
