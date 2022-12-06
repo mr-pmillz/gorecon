@@ -292,6 +292,10 @@ func Parse(opts *Options) error {
 		if err = runNmapAsync(opts.Output, targets); err != nil {
 			return localio.LogError(err)
 		}
+	case opts.Nuclei:
+		if err = runNuclei(data, opts); err != nil {
+			return localio.LogError(err)
+		}
 	default:
 		// Do Nothing.
 	}

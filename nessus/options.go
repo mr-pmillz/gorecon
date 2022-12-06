@@ -11,6 +11,7 @@ type Options struct {
 	TestSSL    bool
 	StreamNmap bool
 	AsyncNmap  bool
+	Nuclei     bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -19,7 +20,8 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().BoolP("testssl", "", false, "runs Testssl.sh against all tls and ssl nessus findings hosts")
 	cmd.PersistentFlags().BoolP("stream-nmap", "", false, "streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts")
 	cmd.PersistentFlags().BoolP("async-nmap", "", false, "runs nmap asynchronously in 5 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts")
-	cmd.MarkFlagsMutuallyExclusive("async-nmap", "stream-nmap", "testssl")
+	cmd.PersistentFlags().BoolP("nuclei", "", false, "runs nuclei automatic templates against all web services")
+	cmd.MarkFlagsMutuallyExclusive("async-nmap", "stream-nmap", "testssl", "nuclei")
 	return nil
 }
 
@@ -49,6 +51,12 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.TestSSL = cmdTestSSL
+
+	cmdNuclei, err := cmd.Flags().GetBool("nuclei")
+	if err != nil {
+		return err
+	}
+	opts.Nuclei = cmdNuclei
 
 	cmdStreamNmap, err := cmd.Flags().GetBool("stream-nmap")
 	if err != nil {
