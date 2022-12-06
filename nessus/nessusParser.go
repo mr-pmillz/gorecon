@@ -32,7 +32,11 @@ func writeHostsToFile(pluginName, pluginID, severity, output string, hosts []str
 // writeHostsToFileNoPorts ...
 func writeHostsToFileNoPorts(pluginName, pluginID, severity, output string, hosts []string) error {
 	outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(pluginName), " "), "-"))
-	absOutputFilePath := fmt.Sprintf("%s/%s_%s-%s-hosts-no-ports.txt", output, severity, pluginID, outputFileName)
+	noPortsOutputDir := fmt.Sprintf("%s/findings_hosts_no_ports", output)
+	if err := os.MkdirAll(noPortsOutputDir, os.ModePerm); err != nil {
+		return localio.LogError(err)
+	}
+	absOutputFilePath := fmt.Sprintf("%s/findings_hosts_no_ports/%s_%s-%s-hosts-no-ports.txt", output, severity, pluginID, outputFileName)
 	if err := localio.WriteLines(hosts, absOutputFilePath); err != nil {
 		return localio.LogError(err)
 	}
