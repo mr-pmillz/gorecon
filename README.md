@@ -215,6 +215,7 @@ Example Commands:
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --stream-nmap
+        gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --nuclei
 
 Usage:
   gorecon nessus [flags]
@@ -223,6 +224,7 @@ Flags:
       --async-nmap           runs nmap asynchronously in 5 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts
   -h, --help                 help for nessus
   -n, --nessus-file string   full or relative path to nessus file.nessus
+      --nuclei               runs nuclei automatic templates against all web services
   -o, --output string        report output dir
       --stream-nmap          streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts
       --testssl              runs Testssl.sh against all tls and ssl nessus findings hosts
