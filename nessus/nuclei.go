@@ -48,8 +48,8 @@ func runNuclei(n *DataNessus, opts *Options) error {
 	}
 
 	nucleiOutput := fmt.Sprintf("%s/web/nuclei-output.txt", opts.Output)
-	nucleiRawOutput := fmt.Sprintf("%s/web/nuclei-raw-output.txt", opts.Output)
-	nucleiAutoScanCMD := fmt.Sprintf("%s -l %s -as -v -o %s | tee %s", nucleiBin, nessusURLs, nucleiOutput, nucleiRawOutput)
+	nucleiRawOutput := fmt.Sprintf("%s/web/nuclei-color-output.txt", opts.Output)
+	nucleiAutoScanCMD := fmt.Sprintf("%s -l %s -as -no-interactsh -stats -o %s | tee %s", nucleiBin, nessusURLs, nucleiOutput, nucleiRawOutput)
 
 	if err = localio.RunCommandPipeOutput(fmt.Sprintf("%s -update-templates", nucleiBin)); err != nil {
 		return localio.LogError(err)
