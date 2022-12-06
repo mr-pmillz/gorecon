@@ -69,7 +69,7 @@ func (s bySeverity) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // printTable creates a formatted table containing findings sorted from Critical to Low
 // writes table to file and to stdout
-func printTable(n *DataNessus, opts *Options) ([]string, error) {
+func printTable(n *DataNessus, opts *Options) error {
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
 	table.SetHeader([]string{"Finding", "Plugin ID", "Severity", "Exploit Available", "Count", "Hosts"})
@@ -109,7 +109,6 @@ func printTable(n *DataNessus, opts *Options) ([]string, error) {
 	}
 
 	rows := make(bySeverity, 0, len(items))
-	var affectedHosts []string
 	scanStats := &ScanStats{}
 	for finding, info := range items {
 		sortedHosts := localio.SortHosts(affectedHostsPluginID[info[1]])
@@ -133,12 +132,11 @@ func printTable(n *DataNessus, opts *Options) ([]string, error) {
 		scanStats = setStats(info[2], *scanStats)
 
 		if err := writeHostsToFile(finding, info[1], info[2], opts.Output, sortedHosts); err != nil {
-			return nil, localio.LogError(err)
+			return localio.LogError(err)
 		}
 		if err := writeHostsToFileNoPorts(finding, info[1], info[2], opts.Output, sortedHostsNoPorts); err != nil {
-			return nil, localio.LogError(err)
+			return localio.LogError(err)
 		}
-		affectedHosts = append(affectedHosts, sortedHosts...)
 	}
 	sort.Sort(sort.Reverse(rows))
 
@@ -185,10 +183,10 @@ func printTable(n *DataNessus, opts *Options) ([]string, error) {
 
 	fmt.Println(tableString.String())
 	if err := localio.WriteStringToFile(fmt.Sprintf("%s/nessus_table_output.txt", opts.Output), tableString.String()); err != nil {
-		return nil, localio.LogError(err)
+		return localio.LogError(err)
 	}
 
-	return localio.RemoveDuplicateStr(affectedHosts), nil
+	return nil
 }
 
 // getPriorityColor ...
@@ -244,16 +242,22 @@ func getNessusData(nessusFile string) (*DataNessus, error) {
 	return r, nil
 }
 
-// getNmapTargets ...
-func getNmapTargets(affectedHosts []string) (map[string][]string, error) {
-	targets := make(map[string][]string)
-	for _, hosts := range affectedHosts {
-		hostPort := strings.Split(hosts, ":")
-		if hostPort[0] != "0" {
-			targets[hostPort[0]] = append(targets[hostPort[0]], hostPort[1])
+// getAllTargetsOpenPorts ...
+func getAllTargetsOpenPorts(n *DataNessus) (map[string][]string, error) {
+	allTargetsOpenPorts := map[string][]string{}
+	for _, reportHost := range n.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
+			if info.Port != 0 {
+				if !localio.Contains(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port)) {
+					allTargetsOpenPorts[reportHost.Name] = append(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port))
+					allTargetsOpenPorts[reportHost.Name] = localio.RemoveDuplicateStr(allTargetsOpenPorts[reportHost.Name])
+					sort.Strings(allTargetsOpenPorts[reportHost.Name])
+				}
+			}
 		}
 	}
-	return targets, nil
+
+	return allTargetsOpenPorts, nil
 }
 
 // Parse parses the nessus file and prints the results table
@@ -263,8 +267,7 @@ func Parse(opts *Options) error {
 		return localio.LogError(err)
 	}
 
-	affectedHosts, err := printTable(data, opts)
-	if err != nil {
+	if err = printTable(data, opts); err != nil {
 		return localio.LogError(err)
 	}
 
@@ -274,7 +277,7 @@ func Parse(opts *Options) error {
 			return localio.LogError(err)
 		}
 	case opts.StreamNmap:
-		targets, err := getNmapTargets(affectedHosts)
+		targets, err := getAllTargetsOpenPorts(data)
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -282,7 +285,7 @@ func Parse(opts *Options) error {
 			return localio.LogError(err)
 		}
 	case opts.AsyncNmap:
-		targets, err := getNmapTargets(affectedHosts)
+		targets, err := getAllTargetsOpenPorts(data)
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -290,7 +293,7 @@ func Parse(opts *Options) error {
 			return localio.LogError(err)
 		}
 	default:
-		_ = affectedHosts
+		// Do Nothing.
 	}
 
 	return nil
