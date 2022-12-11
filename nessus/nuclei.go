@@ -8,7 +8,7 @@ import (
 )
 
 // generateURLs ...
-func generateURLs(n *DataNessus) ([]string, error) {
+func generateURLs(n *Data) ([]string, error) {
 	var allWebURLs []string
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
@@ -25,7 +25,7 @@ func generateURLs(n *DataNessus) ([]string, error) {
 // runNuclei runs nuclei against all www SvcName items from parsed Nessus data
 // runs basic automatic scan
 // TODO run scans based upon CVE findings from nessus etc...
-func runNuclei(n *DataNessus, opts *Options) error {
+func runNuclei(n *Data, opts *Options) error {
 	urls, err := generateURLs(n)
 	if err != nil {
 		return localio.LogError(err)

@@ -39,6 +39,7 @@ Example Commands:
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --stream-nmap
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --nuclei
+	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --enum4linux-ng
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error

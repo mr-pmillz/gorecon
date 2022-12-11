@@ -73,7 +73,7 @@ func (s bySeverity) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // printTable creates a formatted table containing findings sorted from Critical to Low
 // writes table to file and to stdout
-func printTable(n *DataNessus, opts *Options) error {
+func printTable(n *Data, opts *Options) error {
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
 	table.SetHeader([]string{"Finding", "Plugin ID", "Severity", "Exploit Available", "Count", "Hosts"})
@@ -226,9 +226,9 @@ func setStats(severity string, scanStats ScanStats) *ScanStats {
 	return &scanStats
 }
 
-// getNessusData Unmarshals nessus file to *DataNessus struct
-func getNessusData(nessusFile string) (*DataNessus, error) {
-	r := &DataNessus{}
+// getNessusData Unmarshals nessus file to *NessusData struct
+func getNessusData(nessusFile string) (*Data, error) {
+	r := &Data{}
 	nesFile, err := os.OpenFile(nessusFile, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return nil, localio.LogError(err)
@@ -247,7 +247,7 @@ func getNessusData(nessusFile string) (*DataNessus, error) {
 }
 
 // getAllTargetsOpenPorts ...
-func getAllTargetsOpenPorts(n *DataNessus) (map[string][]string, error) {
+func getAllTargetsOpenPorts(n *Data) (map[string][]string, error) {
 	allTargetsOpenPorts := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
@@ -264,6 +264,64 @@ func getAllTargetsOpenPorts(n *DataNessus) (map[string][]string, error) {
 	return allTargetsOpenPorts, nil
 }
 
+// getTargetsByPorts ...
+func getTargetsByPorts(n *Data, ports []string) (map[string][]string, error) {
+	targets := map[string][]string{}
+	for _, reportHost := range n.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
+			if localio.Contains(ports, strconv.Itoa(info.Port)) {
+				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
+					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
+					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])
+					sort.Strings(targets[reportHost.Name])
+				}
+			}
+		}
+	}
+
+	return targets, nil
+}
+
+// getTargetsBySVCName ...
+func getTargetsBySVCName(n *Data, svcKinds []string) (map[string][]string, error) {
+	targets := map[string][]string{}
+	for _, reportHost := range n.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
+			if localio.Contains(svcKinds, info.SvcName) {
+				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
+					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
+					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])
+					sort.Strings(targets[reportHost.Name])
+				}
+			}
+		}
+	}
+
+	return targets, nil
+}
+
+func writeSMBHostsToFile(data *Data, outputDir string) error {
+	targets, err := getTargetsByPorts(data, []string{"445"})
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var targetList []string //nolint:prealloc
+	for target := range targets {
+		targetList = append(targetList, target)
+	}
+
+	uniqueTargets := localio.RemoveDuplicateStr(targetList)
+	if err = os.MkdirAll(fmt.Sprintf("%s/smb", outputDir), os.ModePerm); err != nil {
+		return localio.LogError(err)
+	}
+
+	if err = localio.WriteLines(uniqueTargets, fmt.Sprintf("%s/smb/nessus-smb-hosts.txt", outputDir)); err != nil {
+		return localio.LogError(err)
+	}
+	return nil
+}
+
 // Parse parses the nessus file and prints the results table
 func Parse(opts *Options) error {
 	data, err := getNessusData(opts.NessusFile)
@@ -272,6 +330,10 @@ func Parse(opts *Options) error {
 	}
 
 	if err = printTable(data, opts); err != nil {
+		return localio.LogError(err)
+	}
+
+	if err = writeSMBHostsToFile(data, opts.Output); err != nil {
 		return localio.LogError(err)
 	}
 
@@ -300,6 +362,13 @@ func Parse(opts *Options) error {
 		if err = runNuclei(data, opts); err != nil {
 			return localio.LogError(err)
 		}
+	case opts.Enum4LinuxNG:
+		if err = runEnum4LinuxNG(data, opts.Output); err != nil {
+			return localio.LogError(err)
+		}
+		if err = runCrackMapExecSMB(opts.Output); err != nil {
+			return localio.LogError(err)
+		}
 	default:
 		// Do Nothing.
 	}
@@ -307,8 +376,8 @@ func Parse(opts *Options) error {
 	return nil
 }
 
-// DataNessus contains a nessus report.
-type DataNessus struct {
+// Data contains a nessus report.
+type Data struct {
 	Report Report `xml:"Report"`
 }
 

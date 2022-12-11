@@ -6,12 +6,13 @@ import (
 )
 
 type Options struct {
-	NessusFile string
-	Output     string
-	TestSSL    bool
-	StreamNmap bool
-	AsyncNmap  bool
-	Nuclei     bool
+	NessusFile   string
+	Output       string
+	TestSSL      bool
+	StreamNmap   bool
+	AsyncNmap    bool
+	Nuclei       bool
+	Enum4LinuxNG bool
 }
 
 func ConfigureCommand(cmd *cobra.Command) error {
@@ -21,7 +22,10 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().BoolP("stream-nmap", "", false, "streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts")
 	cmd.PersistentFlags().BoolP("async-nmap", "", false, "runs nmap asynchronously in 5 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts")
 	cmd.PersistentFlags().BoolP("nuclei", "", false, "runs nuclei automatic templates against all web services")
-	cmd.MarkFlagsMutuallyExclusive("async-nmap", "stream-nmap", "testssl", "nuclei")
+	cmd.PersistentFlags().BoolP("enum4linux-ng", "", false, "runs enum4linux-ng against all hosts parsed from nessus within svc_name attribute slice []string{\"cifs\", \"smb\", \"epmap\", \"ldap\"} also runs initial crackmapexec smb against just port 445 hosts")
+	cmd.MarkFlagsMutuallyExclusive("async-nmap", "stream-nmap", "testssl", "nuclei", "enum4linux-ng")
+	_ = cmd.MarkFlagRequired("nessus-file")
+	_ = cmd.MarkFlagRequired("output")
 	return nil
 }
 
@@ -51,6 +55,12 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 		return err
 	}
 	opts.TestSSL = cmdTestSSL
+
+	cmdEnum4LinuxNG, err := cmd.Flags().GetBool("enum4linux-ng")
+	if err != nil {
+		return err
+	}
+	opts.Enum4LinuxNG = cmdEnum4LinuxNG
 
 	cmdNuclei, err := cmd.Flags().GetBool("nuclei")
 	if err != nil {

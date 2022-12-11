@@ -109,7 +109,7 @@ func runAmass(opts *Options, scope *Hosts, asnInfo *ASNMapScope) (*AmassResults,
 
 	enumCMD := fmt.Sprintf("amass enum -config %s -ipv4 -noalts -norecursive -json %s &> %s", amassConfig, jsonOutput, textOutput)
 	localio.Infof("Running Amass. This command takes a while, around 10 - 20 minutes depending on the size of the target network.\nBe patient. Tailing this funky file for you!")
-	// tail amass' output for show while you report for dough!
+	// tail amasses output for show while you report for dough!
 	t, err := tail.TailFile(textOutput, tail.Config{
 		MustExist: false,
 		Follow:    true,
@@ -195,8 +195,8 @@ func formatDataSources(opts *Options, scope *Hosts, asnInfo *ASNMapScope) (*Amas
 	}
 	a.OutputDirectory = amassOutputDir
 
-	ips := []string{}
-	cidrs := []string{}
+	var ips []string
+	var cidrs []string
 	domains := []string{"[scope.domains]"}
 	outOfScopeSubdomains := []string{"[scope.blacklisted]"}
 	for _, i := range scope.CIDRs {
