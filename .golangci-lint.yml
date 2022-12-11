@@ -36,7 +36,7 @@ linters:
     #- nakedret
     #- noctx
     #- nolintlint
-    - prealloc
+    # - prealloc
     - revive
     #- rowserrcheck
     #- scopelint

@@ -195,8 +195,8 @@ func formatDataSources(opts *Options, scope *Hosts, asnInfo *ASNMapScope) (*Amas
 	}
 	a.OutputDirectory = amassOutputDir
 
-	var ips []string
-	var cidrs []string
+	var ips []string   //nolint:prealloc
+	var cidrs []string //nolint:prealloc
 	domains := []string{"[scope.domains]"}
 	outOfScopeSubdomains := []string{"[scope.blacklisted]"}
 	for _, i := range scope.CIDRs {
