@@ -328,6 +328,11 @@ func Parse(opts *Options) error {
 	if err != nil {
 		return localio.LogError(err)
 	}
+	absOutputPath, err := localio.ResolveAbsPath(opts.Output)
+	if err != nil {
+		return localio.LogError(err)
+	}
+	opts.Output = absOutputPath
 
 	if err = printTable(data, opts); err != nil {
 		return localio.LogError(err)
