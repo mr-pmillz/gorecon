@@ -46,7 +46,7 @@ func runDNSRecon(domains []string, outputDir string) error {
 	}
 
 	// dnsrecon adds config files to /etc/dnsrecon during python3 setup.py install, so requires sudo.
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && sudo python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && python3 -m pip install -U wheel setuptools && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && sudo python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
 		return err
 	}
 
