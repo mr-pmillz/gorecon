@@ -365,8 +365,10 @@ func setupWorkspace(workspace, company string, domains, subs, netblocks []string
 		return err
 	}
 
-	if err := insertNetblocks(workspace, netblocks); err != nil {
-		return err
+	if len(netblocks) >= 1 {
+		if err := insertNetblocks(workspace, netblocks); err != nil {
+			return err
+		}
 	}
 
 	if err := setUserAgent(workspace); err != nil {
