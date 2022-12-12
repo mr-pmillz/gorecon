@@ -25,6 +25,19 @@ func configureReconNGDependencies() error {
 		"pyaes",
 		"PyPDF3",
 		"censys",
+		"certifi",
+		"pyyaml",
+		"dnspython",
+		"lxml",
+		"mechanize",
+		"requests",
+		"flask",
+		"flask-restful",
+		"flasgger",
+		"dicttoxml",
+		"XlsxWriter",
+		"unicodecsv",
+		"rq",
 	}
 
 	for _, pkg := range deps {
@@ -257,6 +270,7 @@ func insertNetblocks(workspace string, netblocks []string) error {
 }
 
 // generateReport creates html and csv report files
+//
 //nolint:gocognit
 func generateReport(workspace, creator, company, output string) (*CsvReportFiles, error) {
 	workReportDir, err := localio.ResolveAbsPath(output)
