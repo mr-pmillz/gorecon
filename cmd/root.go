@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/mr-pmillz/gorecon/v2/cmd/nessus"
 	"github.com/mr-pmillz/gorecon/v2/cmd/srctleaks"
-	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,7 +18,7 @@ import (
 
 var (
 	cfgFile string
-	version = "v2.1.8"
+	version = "v2.1.9"
 )
 
 const (

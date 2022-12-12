@@ -46,9 +46,16 @@ func runDNSRecon(domains []string, outputDir string) error {
 	}
 
 	// dnsrecon adds config files to /etc/dnsrecon during python3 setup.py install, so requires sudo.
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && python3 -m pip install -U wheel setuptools && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && sudo python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
-		return err
+	if localio.IsRoot() {
+		if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && python3 -m pip install -U wheel setuptools && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
+			return err
+		}
+	} else {
+		if err := localio.RunCommandPipeOutput(fmt.Sprintf("source %s/dnsrecon/bin/activate && python3 -m pip install -U wheel setuptools && cd %s/dnsrecon && python3 -m pip install -r requirements.txt && sudo python3 setup.py install", virtualEnvsDir, toolsDir)); err != nil {
+			return err
+		}
 	}
+
 
 	for _, domain := range domains {
 		// axfr can cause dnsrecon to hang / timeout indefinitely. Removed axfr option to the -t argument.
