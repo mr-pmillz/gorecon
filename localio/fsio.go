@@ -263,9 +263,10 @@ func Infof(format string, args ...interface{}) {
 	gologger.Info().Msgf(format, args...)
 }
 
+// LogError ... TODO improve loggers
 func LogError(err error) error {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelError)
-	gologger.Error().Str("Error", err.Error())
+	gologger.Error()
 	return err
 }
 
