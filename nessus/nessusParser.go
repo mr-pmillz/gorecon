@@ -282,12 +282,12 @@ func getTargetsByPorts(n *Data, ports []string) (map[string][]string, error) {
 	return targets, nil
 }
 
-// getTargetsBySVCName ...
-func getTargetsBySVCName(n *Data, svcKinds []string) (map[string][]string, error) {
+// getTCPTargetsBySVCName ...
+func getTCPTargetsBySVCName(n *Data, svcKinds []string) (map[string][]string, error) {
 	targets := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
-			if localio.Contains(svcKinds, info.SvcName) {
+			if localio.Contains(svcKinds, info.SvcName) && info.Protocol == "tcp" {
 				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
 					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
 					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])

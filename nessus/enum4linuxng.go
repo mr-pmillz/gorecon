@@ -52,7 +52,7 @@ func setupEnum4Linux(outputDir string) (*Enum4LinuxInfo, error) {
 	enum4linuxNGVirtualenvPath := fmt.Sprintf("%s/enum4linux-ng", pyenvDir)
 	setupCMDs := []string{
 		fmt.Sprintf("virtualenv -p python3 %s", enum4linuxNGVirtualenvPath),
-		fmt.Sprintf("source %s/bin/activate && cd %s && python3 -m pip install -r requirements.txt && python3 setup.py install", enum4linuxNGVirtualenvPath, repoPath),
+		fmt.Sprintf("source %s/bin/activate ; cd %s && python3 -m pip install -r requirements.txt ; python3 setup.py install", enum4linuxNGVirtualenvPath, repoPath),
 	}
 
 	if err = localio.RunCommandsPipeOutput(setupCMDs); err != nil {
@@ -74,7 +74,7 @@ func setupEnum4Linux(outputDir string) (*Enum4LinuxInfo, error) {
 
 // runEnum4LinuxNG runs enum4Linux-NG concurrently with 5 goroutines in parallel.
 func runEnum4LinuxNG(data *Data, outputDir string) error {
-	targets, err := getTargetsBySVCName(data, []string{"cifs", "smb", "epmap", "ldap"})
+	targets, err := getTCPTargetsBySVCName(data, []string{"cifs", "smb", "epmap", "ldap"})
 	if err != nil {
 		return localio.LogError(err)
 	}
