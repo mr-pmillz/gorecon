@@ -1,16 +1,20 @@
 package nessus
 
 import (
+	"bytes"
+	_ "embed" // single file embed
 	"encoding/xml"
 	"fmt"
 	"github.com/mr-pmillz/gorecon/v2/localio"
 	"github.com/olekukonko/tablewriter"
 	"io"
 	"os"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 var nonAlphanumericRegex = regexp.MustCompile(`[^.a-zA-Z0-9 ]+`)
@@ -246,12 +250,12 @@ func getNessusData(nessusFile string) (*Data, error) {
 	return r, nil
 }
 
-// getAllTargetsOpenPorts ...
-func getAllTargetsOpenPorts(n *Data) (map[string][]string, error) {
+// getAllTargetsOpenTCPPorts ...
+func getAllTargetsOpenTCPPorts(n *Data) (map[string][]string, error) {
 	allTargetsOpenPorts := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
-			if info.Port != 0 {
+			if info.Port != 0 && info.Protocol == "tcp" {
 				if !localio.Contains(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port)) {
 					allTargetsOpenPorts[reportHost.Name] = append(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port))
 					allTargetsOpenPorts[reportHost.Name] = localio.RemoveDuplicateStr(allTargetsOpenPorts[reportHost.Name])
@@ -300,6 +304,125 @@ func getTCPTargetsBySVCName(n *Data, svcKinds []string) (map[string][]string, er
 	return targets, nil
 }
 
+//go:embed templates/sslReportTable.html
+var sslReportTable string
+
+type HTMLReportRows struct {
+	Key      string
+	PluginID string
+	Hosts    string
+}
+
+// generateSSLTLSReportHTMLFile writes an HTML report file with all the Nessus SSL & TLS Findings.
+// ToDo: if len(hosts) > 50 then use filename instead
+func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error) {
+	tlsAndSSLPluginIDs := []string{"81606", "69551", "15901", "57582", "83738", "51192", "35291", "124410", "20007", "89058", "60108", "31705", "26928", "83875", "78479", "104743", "157288", "45411", "42873", "65821"}
+	affectedHostsPluginID := map[string][]string{}
+	affectedHostsNoPortsPluginID := map[string][]string{}
+	items := map[string][]string{}
+	for _, reportHost := range n.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
+			if localio.Contains(tlsAndSSLPluginIDs, info.PluginID) {
+				affectedHostsPluginID[info.PluginID] = append(affectedHostsPluginID[info.PluginID], fmt.Sprintf("%s:%d", reportHost.Name, info.Port))
+				affectedHostsNoPortsPluginID[info.PluginID] = append(affectedHostsNoPortsPluginID[info.PluginID], reportHost.Name)
+				items[info.PluginName] = []string{info.PluginName, info.PluginID, info.RiskFactor, strconv.FormatBool(info.ExploitAvailable), fmt.Sprintf("%f", info.CVSSBaseScore)}
+			}
+		}
+	}
+
+	rows := make(bySeverity, 0, len(items))
+	for finding, info := range items {
+		sortedHosts := localio.SortHosts(affectedHostsPluginID[info[1]])
+		CVSSFloat, _ := strconv.ParseFloat(info[4], 64)
+		rows = append(rows, Entry{
+			key: finding,
+			value: &Row{
+				Finding:       finding,
+				PluginID:      info[1],
+				CVSSBaseScore: CVSSFloat,
+				Hosts:         strings.Join(sortedHosts, "\n"),
+			},
+		})
+	}
+
+	sort.Sort(sort.Reverse(rows))
+	var htmlRows []HTMLReportRows
+	for _, i := range rows {
+		htmlRows = append(htmlRows, HTMLReportRows{
+			Key:      i.key,
+			PluginID: i.value.PluginID,
+			Hosts:    localio.Reverse(i.value.Hosts),
+		})
+	}
+
+	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
+
+	// In the template, we use rangeStruct to turn our struct values
+	// into a slice we can iterate over
+	htmlTemplate := `{{range .}}<tr>
+{{range rangeStruct .}} <td>{{.}}</td>
+{{end}}</tr>
+{{end}}`
+	t := template.New("t").Funcs(templateFuncs)
+	t, err := t.Parse(htmlTemplate)
+	if err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	var sslTemplateBuf bytes.Buffer
+	if err = t.Execute(&sslTemplateBuf, htmlRows); err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	reportTemplate, err := template.New("reportTemplate").Parse(sslReportTable)
+	if err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	var reportTemplateBuf bytes.Buffer
+	if err = reportTemplate.Execute(&reportTemplateBuf, SSLTLSRows{
+		Rows: sslTemplateBuf.String(),
+	}); err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	sslDir := fmt.Sprintf("%s/ssl", outputDir)
+	if err = os.MkdirAll(sslDir, os.ModePerm); err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/nessusSSLTLSReport.html", outputDir)); err != nil {
+		return nil, localio.LogError(err)
+	}
+
+	return &rows, nil
+}
+
+type SSLTLSRows struct {
+	Rows string
+}
+
+// RangeStructer takes the first argument, which must be a struct, and
+// returns the value of each field in a slice. It will return nil
+// if there are no arguments or first argument is not a struct
+func RangeStructer(args ...interface{}) []interface{} {
+	if len(args) == 0 {
+		return nil
+	}
+
+	v := reflect.ValueOf(args[0])
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
+	out := make([]interface{}, v.NumField())
+	for i := 0; i < v.NumField(); i++ {
+		out[i] = v.Field(i).Interface()
+	}
+
+	return out
+}
+
 func writeSMBHostsToFile(data *Data, outputDir string) error {
 	targets, err := getTargetsByPorts(data, []string{"445"})
 	if err != nil {
@@ -344,11 +467,16 @@ func Parse(opts *Options) error {
 
 	switch {
 	case opts.TestSSL:
+		_, err = generateSSLTLSReportHTMLFile(data, opts.Output)
+		if err != nil {
+			return localio.LogError(err)
+		}
 		if err = runTestSSL(opts.Output, true); err != nil {
 			return localio.LogError(err)
 		}
+		// ToDo: Parse testssl.sh JSON or CSV results and visualize in single HTML table and/or local Elastic/Kibana
 	case opts.StreamNmap:
-		targets, err := getAllTargetsOpenPorts(data)
+		targets, err := getAllTargetsOpenTCPPorts(data)
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -356,7 +484,7 @@ func Parse(opts *Options) error {
 			return localio.LogError(err)
 		}
 	case opts.AsyncNmap:
-		targets, err := getAllTargetsOpenPorts(data)
+		targets, err := getAllTargetsOpenTCPPorts(data)
 		if err != nil {
 			return localio.LogError(err)
 		}
