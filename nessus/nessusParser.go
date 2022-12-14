@@ -386,6 +386,11 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 		return nil, localio.LogError(err)
 	}
 
+	sslDir := fmt.Sprintf("%s/ssl", outputDir)
+	if err = os.MkdirAll(sslDir, os.ModePerm); err != nil {
+		return nil, localio.LogError(err)
+	}
+
 	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/nessusSSLTLSReport.html", outputDir)); err != nil {
 		return nil, localio.LogError(err)
 	}
