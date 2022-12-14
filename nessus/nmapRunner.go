@@ -173,7 +173,7 @@ func runNmapAsync(outputDir string, targets map[string][]string) error {
 		localio.LogFatal(err, "could not get nmap path")
 	}
 	for target, ports := range targets {
-		command := fmt.Sprintf("sudo %s -vvv -A -T4 -p %s -oA %s/nmap/%s-open-ports %s", nmapPath, strings.Join(ports, ","), outputDir, target, target)
+		command := fmt.Sprintf("sudo %s -vvv -Pn -p %s -sC -sV -oA %s/nmap/%s-open-ports %s", nmapPath, strings.Join(ports, ","), outputDir, target, target)
 		localio.LogInfo("Command", command, "")
 		tasks <- exec.Command(bashPath, "-c", command)
 	}
