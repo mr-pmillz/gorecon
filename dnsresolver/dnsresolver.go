@@ -88,7 +88,7 @@ func doQueries(work chan string, wg *sync.WaitGroup) {
 
 				for _, a := range addr {
 					fmt.Println(ip, "\t", strings.TrimRight(a, "."))
-					resolveData = append(resolveData, fmt.Sprintf("%s\t%s", ip, strings.TrimRight(a, ".")))
+					resolveData = append(resolveData, fmt.Sprintf("%s[%s]", strings.TrimRight(a, "."), ip))
 				}
 			}
 		case valid.IsIPv4(target):
@@ -99,7 +99,7 @@ func doQueries(work chan string, wg *sync.WaitGroup) {
 
 			for _, a := range addr {
 				fmt.Println(target, "\t", strings.TrimRight(a, "."))
-				resolveData = append(resolveData, fmt.Sprintf("%s\t%s", target, strings.TrimRight(a, ".")))
+				resolveData = append(resolveData, fmt.Sprintf("%s[%s]", strings.TrimRight(a, "."), target))
 			}
 		case valid.IsDNSName(target):
 			ips, err := u.LookupIP(target)
@@ -108,7 +108,7 @@ func doQueries(work chan string, wg *sync.WaitGroup) {
 			}
 			for _, ip := range ips {
 				fmt.Println(ip.String(), "\t", target)
-				resolveData = append(resolveData, fmt.Sprintf("%s\t%s", ip.String(), target))
+				resolveData = append(resolveData, fmt.Sprintf("%s[%s]", target, ip.String()))
 			}
 		default:
 			// DoNothing
