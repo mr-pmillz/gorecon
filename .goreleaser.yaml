@@ -9,8 +9,6 @@ builds:
     binary: gorecon
     flags:
       - -trimpath
-    env:
-      - CGO_ENABLED=1
     asmflags:
       - all=-trimpath={{.Env.GOPATH}}
     gcflags:
