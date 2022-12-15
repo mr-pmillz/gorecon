@@ -55,6 +55,7 @@ As an optional feature ToDo:
 * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
 * [gorecon srctleaks](docs/gorecon_srctleaks.md)     - Run Gitleaks against discovered public organization repositories.
 * [gorecon nessus](docs/gorecon_nessus.md)           - Parses a .nessus file, prints nice table and writes relevant hosts:ports to corresponding findings files
+* [gorecon dnsresolver](docs/gorecon_dnsresolver.md) - Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file.
 
 ## Installation
 
@@ -125,6 +126,7 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
+  dnsresolver Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file
   help        Help about any command
   nessus      parses nessus file
   recon       Run recon enumeration
@@ -133,6 +135,7 @@ Available Commands:
 Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
   -h, --help            help for gorecon
+  -v, --version         version for gorecon
 
 Use "gorecon [command] --help" for more information about a command.
 ```
@@ -262,8 +265,7 @@ Global Flags:
 
 ## Development Contributing
 
-In order to build the module, you may need to install libunbound-dev for the dnsresolver unbound library
-to build properly.
+In order to build the GoRecon module binary, you may need to install libunbound-dev for the dnsresolver sub commands unbound library dependency to build properly.
 
 ```shell
 sudo apt install libunbound-dev
