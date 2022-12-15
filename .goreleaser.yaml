@@ -10,7 +10,7 @@ builds:
     flags:
       - -trimpath
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     asmflags:
       - all=-trimpath={{.Env.GOPATH}}
     gcflags:
@@ -21,6 +21,7 @@ builds:
       - linux
     goarch:
       - amd64
+      - arm64
 
 archives:
   - id: tgz
