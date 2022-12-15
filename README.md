@@ -22,6 +22,8 @@ Table of Contents
   * [recon](#recon)
   * [srctleaks](#srctleaks)
   * [Nessus Parser](#nessus-parser)
+  * [dnsresolver](#dns-resolver)
+  * [Development Contributing](#development-contributing)
 
 ## About
 
@@ -233,4 +235,36 @@ Flags:
 
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
+```
+
+## DNS Resolver
+
+```shell
+Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file.
+The dnsresolver subcommand will automatically parse the nameservers in /etc/resolv.conf using the "github.com/miekg/unbound" library's ResolvConf() method
+
+Example Commands:
+        gorecon dnsresolver -t path/to/target-list.txt -o path/to/output-dir
+        gorecon dnsresolver -t path/to/target-list.txt -o path/to/output-dir -w 30
+
+Usage:
+  gorecon dnsresolver [flags]
+
+Flags:
+  -h, --help             help for dnsresolver
+  -o, --output string    directory where results will be written to. if dir not exist is created.
+  -t, --targets string   full or relative path to a file containing a list of targets, CIDRs, hostnames, IPs
+  -w, --workers int      number of goroutines to use. default is 10 (default 10)
+
+Global Flags:
+      --config string   config file (default is APP_ROOT/config/config.yaml
+```
+
+## Development Contributing
+
+In order to build the module, you may need to install libunbound-dev for the dnsresolver unbound library
+to build properly.
+
+```shell
+sudo apt install libunbound-dev
 ```

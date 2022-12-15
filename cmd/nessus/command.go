@@ -26,7 +26,7 @@ func (opts *Options) LoadFromCommand(cmd *cobra.Command) error {
 	return nil
 }
 
-// Command represents the srctleaks command
+// Command represents the nessus command
 var Command = &cobra.Command{
 	Use:   "nessus",
 	Short: "parses nessus file",

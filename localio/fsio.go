@@ -245,6 +245,18 @@ func LogInfo(key, val, msg string) {
 	gologger.Info().Str(key, val).Msg(msg)
 }
 
+// LogMsgToFile ...
+// func LogMsgToFile(msg, outputFilePath string) {
+//	f, err := os.OpenFile(outputFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+//	if err != nil {
+//		return
+//	}
+//	defer f.Close()
+//	teeformatter := formatter.NewTee(formatter.NewCLI(false), f)
+//	gologger.DefaultLogger.SetFormatter(teeformatter)
+//	gologger.Info().Msg(msg)
+// }
+
 // LogWarningf logs a warning to stdout
 func LogWarningf(format string, args ...interface{}) {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelWarning)
