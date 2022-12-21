@@ -22,8 +22,6 @@ Table of Contents
   * [recon](#recon)
   * [srctleaks](#srctleaks)
   * [Nessus Parser](#nessus-parser)
-  * [dnsresolver](#dns-resolver)
-  * [Development Contributing](#development-contributing)
 
 ## About
 
@@ -55,7 +53,6 @@ As an optional feature ToDo:
 * [gorecon recon](docs/gorecon_recon.md)             - Run all gorecon recon modules.
 * [gorecon srctleaks](docs/gorecon_srctleaks.md)     - Run Gitleaks against discovered public organization repositories.
 * [gorecon nessus](docs/gorecon_nessus.md)           - Parses a .nessus file, prints nice table and writes relevant hosts:ports to corresponding findings files
-* [gorecon dnsresolver](docs/gorecon_dnsresolver.md) - Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file.
 
 ## Installation
 
@@ -63,7 +60,6 @@ Download the compiled binary from [releases](https://github.com/mr-pmillz/goreco
 Or download the program directly with go
 
 ```shell
-sudo apt install libunbound-dev
 go install github.com/mr-pmillz/gorecon/v2@latest
 ```
 
@@ -127,7 +123,6 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  dnsresolver Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file
   help        Help about any command
   nessus      parses nessus file
   recon       Run recon enumeration
@@ -239,35 +234,4 @@ Flags:
 
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
-```
-
-## DNS Resolver
-
-```shell
-Attempts to resolve all hosts, CIDRs, and/or IPs from a provided file.
-The dnsresolver subcommand will automatically parse the nameservers in /etc/resolv.conf using the "github.com/miekg/unbound" library's ResolvConf() method
-
-Example Commands:
-        gorecon dnsresolver -t path/to/target-list.txt -o path/to/output-dir
-        gorecon dnsresolver -t path/to/target-list.txt -o path/to/output-dir -w 30
-
-Usage:
-  gorecon dnsresolver [flags]
-
-Flags:
-  -h, --help             help for dnsresolver
-  -o, --output string    directory where results will be written to. if dir not exist is created.
-  -t, --targets string   full or relative path to a file containing a list of targets, CIDRs, hostnames, IPs
-  -w, --workers int      number of goroutines to use. default is 10 (default 10)
-
-Global Flags:
-      --config string   config file (default is APP_ROOT/config/config.yaml
-```
-
-## Development Contributing
-
-In order to build the GoRecon module binary, you may need to install libunbound-dev for the dnsresolver sub commands unbound library dependency to build properly.
-
-```shell
-sudo apt install libunbound-dev
 ```

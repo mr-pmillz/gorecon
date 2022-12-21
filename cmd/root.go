@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mr-pmillz/gorecon/v2/cmd/dnsresolver"
 	"strings"
 
 	"github.com/mr-pmillz/gorecon/v2/cmd/nessus"
@@ -19,7 +18,7 @@ import (
 
 var (
 	cfgFile string
-	version = "v2.3.0"
+	version = "v2.3.1"
 )
 
 const (
@@ -42,7 +41,6 @@ func init() {
 	RootCmd.AddCommand(recon.Command)
 	RootCmd.AddCommand(srctleaks.Command)
 	RootCmd.AddCommand(nessus.Command)
-	RootCmd.AddCommand(dnsresolver.Command)
 }
 
 // initConfig reads in config file and ENV variables if set.

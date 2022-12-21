@@ -9,7 +9,6 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20220927221512-ad3251f9fa25
 	github.com/google/go-github/v48 v48.0.0
 	github.com/jpillora/go-tld v1.2.1
-	github.com/miekg/unbound v0.0.0-20210309082708-dbeefb4cdb29
 	github.com/mr-pmillz/tail v1.5.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/projectdiscovery/asnmap v0.0.1
