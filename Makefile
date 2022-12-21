@@ -58,7 +58,6 @@ clean:
 	rm -rf $(BIN) 2>/dev/null
 
 build:
-	DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install libunbound-dev -y
 	go env -w GOFLAGS=-mod=mod
 	go mod tidy
 	go build -v -trimpath -ldflags="-s -w" .

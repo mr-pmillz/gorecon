@@ -38,10 +38,6 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      # Install Deps
-      - name: Install deps
-        run: |
-          DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install libunbound-dev -y
       # Run build of the application
       - name: Run build
         run: |
@@ -87,10 +83,6 @@ jobs:
       - name: Set GOPATH
         run: |
           echo "GOPATH=$(go env GOPATH)/bin" >> $GITHUB_ENV
-      # Install Deps
-      - name: Install deps
-        run: |
-          DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install libunbound-dev -y
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         if: startsWith(github.ref, 'refs/tags/v')

@@ -17,10 +17,6 @@ jobs:
         with:
           go-version: 1.18
       - uses: actions/checkout@v3
-      # Install Deps
-      - name: Install deps
-        run: |
-          DEBIAN_FRONTEND=noninteractive sudo apt-get update -y && sudo apt-get install libunbound-dev -y
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
