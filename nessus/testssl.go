@@ -298,15 +298,15 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 				case protocol.ID == "SSLv3" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
 					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
 					items["SSL 3.0 Protocol Supported"] = []string{"SSL 3.0 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
-				case protocol.ID == "TLS1" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+				case protocol.ID == "TLS1" && protocol.Severity != OK && protocol.Severity != INFO:
 					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
 					items["TLS 1.0 Protocol Supported"] = []string{"TLS 1.0 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
-				case protocol.ID == "TLS1_1" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+				case protocol.ID == "TLS1_1" && protocol.Severity != OK && protocol.Severity != INFO:
 					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
 					items["TLS 1.1 Protocol Supported"] = []string{"TLS 1.1 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
 				}
 			}
-			for _, cipher := range info.ServerPreferences {
+			for _, cipher := range info.Ciphers {
 				if cipher.Severity != OK && cipher.Severity != INFO && cipher.Severity != LOW {
 					affectedHosts[cipher.ID] = append(affectedHosts[cipher.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
 					items["Weak Ciphers"] = []string{"Weak Ciphers", cipher.ID, cipher.Finding, cipher.Severity}
@@ -351,6 +351,15 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 			})
 		}
 	}
+	sort.Slice(htmlRows, func(i, j int) bool {
+		switch strings.Compare(htmlRows[i].Key, htmlRows[j].Key) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+		return htmlRows[i].Key > htmlRows[j].Key
+	})
 
 	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
 
@@ -388,7 +397,7 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 		return localio.LogError(err)
 	}
 
-	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/server-supports-weak-ssl-tls-encryption-report.html", outputDir)); err != nil {
+	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/server-supports-weak-transport-layer-security-report.html", outputDir)); err != nil {
 		return localio.LogError(err)
 	}
 
