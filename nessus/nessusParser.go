@@ -62,6 +62,7 @@ type Row struct {
 	ExploitAvailable string
 	Count            string
 	Hosts            string
+	FileName         string
 }
 
 type Entry struct {
@@ -119,7 +120,8 @@ func printTable(n *Data, opts *Options) error {
 	rows := make(bySeverity, 0, len(items))
 	scanStats := &ScanStats{}
 	for finding, info := range items {
-		sortedHosts := localio.SortHosts(affectedHostsPluginID[info[1]])
+		sort.Sort(localio.StringSlice(affectedHostsPluginID[info[1]]))
+		sortedHosts := localio.RemoveDuplicateStr(affectedHostsPluginID[info[1]])
 		sort.Strings(affectedHostsNoPortsPluginID[info[1]])
 		sortedHostsNoPorts := localio.RemoveDuplicateStr(affectedHostsNoPortsPluginID[info[1]])
 		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
@@ -314,17 +316,14 @@ type HTMLReportRows struct {
 }
 
 // generateSSLTLSReportHTMLFile writes an HTML report file with all the Nessus SSL & TLS Findings.
-// ToDo: if len(hosts) > 50 then use filename instead
 func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error) {
 	tlsAndSSLPluginIDs := []string{"81606", "69551", "15901", "57582", "83738", "51192", "35291", "124410", "20007", "89058", "60108", "31705", "26928", "83875", "78479", "104743", "157288", "45411", "42873", "65821"}
 	affectedHostsPluginID := map[string][]string{}
-	affectedHostsNoPortsPluginID := map[string][]string{}
 	items := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
 			if localio.Contains(tlsAndSSLPluginIDs, info.PluginID) {
 				affectedHostsPluginID[info.PluginID] = append(affectedHostsPluginID[info.PluginID], fmt.Sprintf("%s:%d", reportHost.Name, info.Port))
-				affectedHostsNoPortsPluginID[info.PluginID] = append(affectedHostsNoPortsPluginID[info.PluginID], reportHost.Name)
 				items[info.PluginName] = []string{info.PluginName, info.PluginID, info.RiskFactor, strconv.FormatBool(info.ExploitAvailable), fmt.Sprintf("%f", info.CVSSBaseScore)}
 			}
 		}
@@ -332,7 +331,10 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 
 	rows := make(bySeverity, 0, len(items))
 	for finding, info := range items {
-		sortedHosts := localio.SortHosts(affectedHostsPluginID[info[1]])
+		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
+		relativeOutputFilePathHosts := fmt.Sprintf("%s_%s-%s-hosts.txt", info[2], info[1], outputFileName)
+		sort.Sort(localio.StringSlice(affectedHostsPluginID[info[1]]))
+		sortedHosts := localio.RemoveDuplicateStr(affectedHostsPluginID[info[1]])
 		CVSSFloat, _ := strconv.ParseFloat(info[4], 64)
 		rows = append(rows, Entry{
 			key: finding,
@@ -340,7 +342,9 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 				Finding:       finding,
 				PluginID:      info[1],
 				CVSSBaseScore: CVSSFloat,
-				Hosts:         strings.Join(sortedHosts, "\n"),
+				Hosts:         strings.Join(sortedHosts, "<br>"),
+				Count:         strconv.Itoa(len(sortedHosts)),
+				FileName:      relativeOutputFilePathHosts,
 			},
 		})
 	}
@@ -348,11 +352,20 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 	sort.Sort(sort.Reverse(rows))
 	var htmlRows []HTMLReportRows
 	for _, i := range rows {
-		htmlRows = append(htmlRows, HTMLReportRows{
-			Key:      i.key,
-			PluginID: i.value.PluginID,
-			Hosts:    localio.Reverse(i.value.Hosts),
-		})
+		switch {
+		case len(strings.Split(i.value.Hosts, "<br>")) > 50:
+			htmlRows = append(htmlRows, HTMLReportRows{
+				Key:      i.key,
+				PluginID: i.value.PluginID,
+				Hosts:    fmt.Sprintf("<b>Count:</b> %s<br><b>Filename:</b> %s", i.value.Count, i.value.FileName),
+			})
+		default:
+			htmlRows = append(htmlRows, HTMLReportRows{
+				Key:      i.key,
+				PluginID: i.value.PluginID,
+				Hosts:    i.value.Hosts,
+			})
+		}
 	}
 
 	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
@@ -474,7 +487,9 @@ func Parse(opts *Options) error {
 		if err = runTestSSL(opts.Output, true); err != nil {
 			return localio.LogError(err)
 		}
-		// ToDo: Parse testssl.sh JSON or CSV results and visualize in single HTML table and/or local Elastic/Kibana
+		if err = generateWeakSSLTLSFindingsReportHTMLFile(opts.Output); err != nil {
+			return localio.LogError(err)
+		}
 	case opts.StreamNmap:
 		targets, err := getAllTargetsOpenTCPPorts(data)
 		if err != nil {

@@ -1,14 +1,19 @@
 package nessus
 
 import (
+	"bytes"
+	_ "embed" // single file embed
+	"encoding/json"
 	"fmt"
 	"github.com/mr-pmillz/gorecon/v2/localio"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 )
 
 // setup ...
@@ -142,4 +147,250 @@ func writeAllSslTLSHostsToFile(outputDir string) ([]string, error) {
 	}
 
 	return sslTLSHosts, nil
+}
+
+// parseTestSSLResults ...
+func parseTestSSLResults(outputDir string) (*TestSSLReports, error) {
+	files, err := localio.FilePathWalkDir(fmt.Sprintf("%s/ssl", outputDir))
+	if err != nil {
+		return nil, localio.LogError(err)
+	}
+	var jsonFiles []string
+	for _, f := range files {
+		if strings.HasSuffix(f, ".json") {
+			jsonFiles = append(jsonFiles, f)
+		}
+	}
+
+	combinedReport := &TestSSLReports{}
+	for _, j := range jsonFiles {
+		var t TestSSLReport
+		data, err := os.ReadFile(j)
+		if err != nil {
+			return nil, localio.LogError(err)
+		}
+		if err = json.Unmarshal(data, &t); err != nil {
+			continue
+		}
+		combinedReport.Report = append(combinedReport.Report, t)
+	}
+
+	return combinedReport, nil
+}
+
+type TestSSLReports struct {
+	Report []TestSSLReport
+}
+
+type TestSSLReport struct {
+	Invocation string `json:"Invocation,omitempty"`
+	At         string `json:"at,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Openssl    string `json:"openssl,omitempty"`
+	StartTime  string `json:"startTime,omitempty"`
+	ScanResult []struct {
+		TargetHost string `json:"targetHost,omitempty"`
+		IP         string `json:"ip,omitempty"`
+		Port       string `json:"port,omitempty"`
+		RDNS       string `json:"rDNS,omitempty"`
+		Service    string `json:"service,omitempty"`
+		Pretest    []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"pretest,omitempty"`
+		Protocols []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Cve      string `json:"cve,omitempty"`
+			Cwe      string `json:"cwe,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"protocols,omitempty"`
+		Grease  []interface{} `json:"grease,omitempty"`
+		Ciphers []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Cwe      string `json:"cwe,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"ciphers,omitempty"`
+		ServerPreferences []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"serverPreferences,omitempty"`
+		Fs []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"fs,omitempty"`
+		ServerDefaults []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"serverDefaults,omitempty"`
+		HeaderResponse []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+			Cwe      string `json:"cwe,omitempty"`
+		} `json:"headerResponse,omitempty"`
+		Vulnerabilities []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Cve      string `json:"cve,omitempty"`
+			Cwe      string `json:"cwe,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"vulnerabilities,omitempty"`
+		CipherTests        []interface{} `json:"cipherTests,omitempty"`
+		BrowserSimulations []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"browserSimulations,omitempty"`
+		Rating []struct {
+			ID       string `json:"id,omitempty"`
+			Severity string `json:"severity,omitempty"`
+			Finding  string `json:"finding,omitempty"`
+		} `json:"rating,omitempty"`
+	} `json:"scanResult,omitempty"`
+	ScanTime int `json:"scanTime,omitempty"`
+}
+
+type TestSSLEntry struct {
+	key   string
+	value *Row
+}
+
+type testSSLFindings []TestSSLEntry
+
+//go:embed templates/server-supports-weak-ssl-tls-protocols-or-ciphers.html
+var testSSLReportTable string
+
+type TestSSLHTMLReportRows struct {
+	Key   string
+	Hosts string
+}
+
+const (
+	INFO = "INFO"
+	OK   = "OK"
+	LOW  = "LOW"
+)
+
+// generateWeakSSLTLSFindingsReportHTMLFile writes an HTML report file with all the Testssl.sh confirmed Findings.
+//
+//nolint:gocognit
+func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
+	testSSLReports, err := parseTestSSLResults(outputDir)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	affectedHosts := map[string][]string{}
+	items := map[string][]string{}
+	for _, report := range testSSLReports.Report {
+		for _, info := range report.ScanResult {
+			for _, protocol := range info.Protocols {
+				switch {
+				case protocol.ID == "SSLv2" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["SSL 2.0 Protocol Supported"] = []string{"SSL 2.0 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
+				case protocol.ID == "SSLv3" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["SSL 3.0 Protocol Supported"] = []string{"SSL 3.0 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
+				case protocol.ID == "TLS1" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["TLS 1.0 Protocol Supported"] = []string{"TLS 1.0 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
+				case protocol.ID == "TLS1_1" && protocol.Severity != OK && protocol.Severity != INFO && protocol.Severity != LOW:
+					affectedHosts[protocol.ID] = append(affectedHosts[protocol.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["TLS 1.1 Protocol Supported"] = []string{"TLS 1.1 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
+				}
+			}
+			for _, cipher := range info.ServerPreferences {
+				if cipher.Severity != OK && cipher.Severity != INFO && cipher.Severity != LOW {
+					affectedHosts[cipher.ID] = append(affectedHosts[cipher.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Weak Ciphers"] = []string{"Weak Ciphers", cipher.ID, cipher.Finding, cipher.Severity}
+				}
+			}
+		}
+	}
+
+	rows := make(testSSLFindings, 0, len(items))
+	for finding, info := range items {
+		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
+		relativeOutputFilePathHosts := fmt.Sprintf("confirmed-%s-hosts.txt", outputFileName)
+		absOutputFilePathHosts := fmt.Sprintf("%s/ssl/confirmed-%s-hosts.txt", outputDir, outputFileName)
+		sort.Sort(localio.StringSlice(affectedHosts[info[1]]))
+		sortedHosts := localio.RemoveDuplicateStr(affectedHosts[info[1]])
+		rows = append(rows, TestSSLEntry{
+			key: finding,
+			value: &Row{
+				Finding:  finding,
+				Hosts:    strings.Join(sortedHosts, "<br>"),
+				Count:    strconv.Itoa(len(sortedHosts)),
+				FileName: relativeOutputFilePathHosts,
+			},
+		})
+		if err := localio.WriteLines(sortedHosts, absOutputFilePathHosts); err != nil {
+			return localio.LogError(err)
+		}
+	}
+
+	var htmlRows []TestSSLHTMLReportRows
+	for _, i := range rows {
+		switch {
+		case len(strings.Split(i.value.Hosts, "<br>")) > 50:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: fmt.Sprintf("<b>Count:</b> %s<br><b>Filename:</b> %s", i.value.Count, i.value.FileName),
+			})
+		default:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: i.value.Hosts,
+			})
+		}
+	}
+
+	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
+
+	// In the template, we use rangeStruct to turn our struct values
+	// into a slice we can iterate over
+	htmlTemplate := `{{range .}}<tr>
+{{range rangeStruct .}} <td>{{.}}</td>
+{{end}}</tr>
+{{end}}`
+	t := template.New("t").Funcs(templateFuncs)
+	t, err = t.Parse(htmlTemplate)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var sslTemplateBuf bytes.Buffer
+	if err = t.Execute(&sslTemplateBuf, htmlRows); err != nil {
+		return localio.LogError(err)
+	}
+
+	reportTemplate, err := template.New("reportTemplate").Parse(testSSLReportTable)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var reportTemplateBuf bytes.Buffer
+	if err = reportTemplate.Execute(&reportTemplateBuf, SSLTLSRows{
+		Rows: sslTemplateBuf.String(),
+	}); err != nil {
+		return localio.LogError(err)
+	}
+
+	sslDir := fmt.Sprintf("%s/ssl", outputDir)
+	if err = os.MkdirAll(sslDir, os.ModePerm); err != nil {
+		return localio.LogError(err)
+	}
+
+	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/server-supports-weak-ssl-tls-encryption-report.html", outputDir)); err != nil {
+		return localio.LogError(err)
+	}
+
+	return nil
 }

@@ -9,13 +9,13 @@ import (
 	"io"
 	"io/fs"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -278,7 +278,7 @@ func Infof(format string, args ...interface{}) {
 // LogError ... TODO improve loggers
 func LogError(err error) error {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelError)
-	gologger.Error()
+	gologger.Error().Str("Error", err.Error())
 	return err
 }
 
@@ -569,69 +569,78 @@ func CopyStringToFile(data, dest string) error {
 	return err
 }
 
-func OrderIPPair(firstIP string, secondIP string) [2]string {
-	// extract numbers out of IP strings
-	firstIPPortArr := strings.Split(firstIP, ":")
-	firstIPArr := strings.Split(firstIPPortArr[0], ".")
-	secondIPPortArr := strings.Split(secondIP, ":")
-	secondIPArr := strings.Split(secondIPPortArr[0], ".")
-
-	// compare and return ordered string literal array
-	for index, num := range firstIPArr {
-		switch {
-		case num == secondIPArr[index]:
-			continue
-		case num > secondIPArr[index]:
-			return [2]string{secondIP, firstIP}
-		default:
-			return [2]string{firstIP, secondIP}
+func Less(a, b string) bool {
+	for {
+		if p := commonPrefix(a, b); p != 0 {
+			a = a[p:]
+			b = b[p:]
 		}
-	} // now check ports if nums were the same and return ordered IP:Ports
-	if firstIPPortArr[1] < secondIPPortArr[1] {
-		return [2]string{firstIP, secondIP}
+		if len(a) == 0 {
+			return len(b) != 0
+		}
+		if ia := digits(a); ia > 0 {
+			if ib := digits(b); ib > 0 {
+				// Both sides have digits.
+				an, aerr := strconv.ParseUint(a[:ia], 10, 64)
+				bn, berr := strconv.ParseUint(b[:ib], 10, 64)
+				if aerr == nil && berr == nil {
+					if an != bn {
+						return an < bn
+					}
+					// Semantically the same digits, e.g. "00" == "0", "01" == "1". In
+					// this case, only continue processing if there's trailing data on
+					// both sides, otherwise do lexical comparison.
+					if ia != len(a) && ib != len(b) {
+						a = a[ia:]
+						b = b[ib:]
+						continue
+					}
+				}
+			}
+		}
+		return a < b
 	}
-	return [2]string{secondIP, firstIP}
 }
 
-// SortHosts sorts host:port addresses of an array in asc. order (quicksort)
-func SortHosts(addrs []string) []string {
-	// recursion base case
-	if len(addrs) < 2 {
-		return addrs
+// StringSlice attaches the methods of Interface to []string, sorting in
+// increasing order using natural order.
+type StringSlice []string
+
+func (p StringSlice) Len() int           { return len(p) }
+func (p StringSlice) Less(i, j int) bool { return Less(p[i], p[j]) }
+func (p StringSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+//
+
+// commonPrefix returns the common prefix except for digits.
+func commonPrefix(a, b string) int {
+	m := len(a)
+	if n := len(b); n < m {
+		m = n
 	}
-	// random ip in addrs as pivot
-	pivot := addrs[rand.Intn(len(addrs))] //nolint:gosec
-
-	var left []string   // for IPs<pivot
-	var middle []string // for IPs=pivot
-	var right []string  // for IPs>pivot
-	var hosts []string  // edge case Hostnames
-
-	for _, ip := range addrs {
-		// edge case where item in addrs is a hostname and not an IPv4
-		hostNoPort := strings.Split(ip, ":")[0]
-		if !valid.IsIP(hostNoPort) {
-			hosts = append(hosts, ip)
-			continue
-		}
-		switch {
-		case OrderIPPair(ip, pivot)[0] == ip:
-			left = append(left, ip)
-		case ip == pivot:
-			middle = append(middle, ip)
-		default:
-			right = append(right, ip)
+	if m == 0 {
+		return 0
+	}
+	_ = a[m-1]
+	_ = b[m-1]
+	for i := 0; i < m; i++ {
+		ca := a[i]
+		cb := b[i]
+		if (ca >= '0' && ca <= '9') || (cb >= '0' && cb <= '9') || ca != cb {
+			return i
 		}
 	}
+	return m
+}
 
-	// combine and return
-	left, right = SortHosts(left), SortHosts(right)
-	var sortedIPs []string
-	sortedIPs = append(sortedIPs, left...)
-	sortedIPs = append(sortedIPs, middle...)
-	sortedIPs = append(sortedIPs, right...)
-	sortedIPs = append(sortedIPs, hosts...)
-	return RemoveDuplicateStr(sortedIPs)
+func digits(s string) int {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c < '0' || c > '9' {
+			return i
+		}
+	}
+	return len(s)
 }
 
 // WriteStringToFile writes a string to a file
