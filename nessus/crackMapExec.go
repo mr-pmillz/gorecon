@@ -11,7 +11,7 @@ func runCrackMapExecSMB(outputDir string) error {
 		return localio.LogError(err)
 	}
 
-	if err := localio.RunCommandPipeOutput(fmt.Sprintf("crackmapexec smb %s/smb/nessus-smb-hosts.txt --shares -u 'anonymous' -p '' | tee %s/smb/cme-smb-anonymous-shares-hosts.txt", outputDir, outputDir)); err != nil {
+	if err := localio.RunCommandPipeOutput(fmt.Sprintf("crackmapexec smb %s/smb/nessus-smb-hosts.txt --shares -u 'guest' -p '' | tee %s/smb/cme-smb-nopass-shares-hosts.txt", outputDir, outputDir)); err != nil {
 		return localio.LogError(err)
 	}
 

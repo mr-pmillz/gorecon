@@ -148,7 +148,9 @@ func printTable(n *Data, opts *Options) error {
 			return localio.LogError(err)
 		}
 	}
-	sort.Sort(sort.Reverse(rows))
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i].value.CVSSBaseScore > rows[j].value.CVSSBaseScore
+	})
 
 	for _, i := range rows {
 		colorData := []string{
@@ -252,16 +254,16 @@ func getNessusData(nessusFile string) (*Data, error) {
 	return r, nil
 }
 
-// getAllTargetsOpenTCPPorts ...
-func getAllTargetsOpenTCPPorts(n *Data) (map[string][]string, error) {
+// getAllTargetsOpenPorts ...
+func getAllTargetsOpenPorts(n *Data, protocol string) (map[string][]string, error) {
 	allTargetsOpenPorts := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
-			if info.Port != 0 && info.Protocol == "tcp" {
+			if info.Port != 0 && info.Protocol == protocol {
 				if !localio.Contains(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port)) {
 					allTargetsOpenPorts[reportHost.Name] = append(allTargetsOpenPorts[reportHost.Name], strconv.Itoa(info.Port))
 					allTargetsOpenPorts[reportHost.Name] = localio.RemoveDuplicateStr(allTargetsOpenPorts[reportHost.Name])
-					sort.Strings(allTargetsOpenPorts[reportHost.Name])
+					sort.Sort(localio.StringSlice(allTargetsOpenPorts[reportHost.Name]))
 				}
 			}
 		}
@@ -271,15 +273,15 @@ func getAllTargetsOpenTCPPorts(n *Data) (map[string][]string, error) {
 }
 
 // getTargetsByPorts ...
-func getTargetsByPorts(n *Data, ports []string) (map[string][]string, error) {
+func getTargetsByPorts(n *Data, ports []string, protocol string) (map[string][]string, error) {
 	targets := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
-			if localio.Contains(ports, strconv.Itoa(info.Port)) {
+			if localio.Contains(ports, strconv.Itoa(info.Port)) && info.Protocol == protocol {
 				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
 					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
 					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])
-					sort.Strings(targets[reportHost.Name])
+					sort.Sort(localio.StringSlice(targets[reportHost.Name]))
 				}
 			}
 		}
@@ -288,22 +290,67 @@ func getTargetsByPorts(n *Data, ports []string) (map[string][]string, error) {
 	return targets, nil
 }
 
-// getTCPTargetsBySVCName ...
-func getTCPTargetsBySVCName(n *Data, svcKinds []string) (map[string][]string, error) {
+// getTargetsBySVCName ...
+func getTargetsBySVCName(n *Data, svcKinds []string, protocol string) (map[string][]string, error) {
 	targets := map[string][]string{}
 	for _, reportHost := range n.Report.ReportHosts {
 		for _, info := range reportHost.ReportItems {
-			if localio.Contains(svcKinds, info.SvcName) && info.Protocol == "tcp" {
+			if localio.Contains(svcKinds, info.SvcName) && info.Protocol == protocol {
 				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
 					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
 					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])
-					sort.Strings(targets[reportHost.Name])
+					sort.Sort(localio.StringSlice(targets[reportHost.Name]))
 				}
 			}
 		}
 	}
 
 	return targets, nil
+}
+
+type NmapTargetInfo struct {
+	Target   string
+	TCPPorts []string
+	UDPPorts []string
+	Scripts  string
+	SVCName  string
+}
+
+// newNmapTargetInfo ...
+func newNmapTargetInfo(d *Data, svcKinds []string) ([]NmapTargetInfo, error) {
+	var n []NmapTargetInfo
+	for _, reportHost := range d.Report.ReportHosts {
+		for _, info := range reportHost.ReportItems {
+			nt := &NmapTargetInfo{}
+			switch {
+			case localio.Contains(svcKinds, info.SvcName) && info.Protocol == "tcp":
+				nt.Target = reportHost.Name
+				nt.TCPPorts = append(nt.TCPPorts, strconv.Itoa(info.Port))
+				nt.SVCName = info.SvcName
+				if script, ok := ScriptMaps[info.SvcName]; ok {
+					nt.Scripts = script
+				}
+				n = append(n, *nt)
+			case localio.Contains(svcKinds, info.SvcName) && info.Protocol == "udp":
+				nt.Target = reportHost.Name
+				nt.UDPPorts = append(nt.UDPPorts, strconv.Itoa(info.Port))
+				nt.SVCName = info.SvcName
+				if script, ok := ScriptMaps[info.SvcName]; ok {
+					nt.Scripts = script
+				}
+			}
+		}
+	}
+	for _, target := range n {
+		uniqueTCPPorts := localio.RemoveDuplicateStr(target.TCPPorts)
+		uniqueUDPPorts := localio.RemoveDuplicateStr(target.UDPPorts)
+		sort.Sort(localio.StringSlice(uniqueTCPPorts))
+		sort.Sort(localio.StringSlice(uniqueUDPPorts))
+		target.TCPPorts = uniqueTCPPorts
+		target.UDPPorts = uniqueUDPPorts
+	}
+
+	return n, nil
 }
 
 //go:embed templates/sslReportTable.html
@@ -315,8 +362,8 @@ type HTMLReportRows struct {
 	Hosts    string
 }
 
-// generateSSLTLSReportHTMLFile writes an HTML report file with all the Nessus SSL & TLS Findings.
-func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error) {
+// generateNessusSSLTLSReportHTMLFile writes an HTML report file with all the Nessus SSL & TLS Findings.
+func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error) {
 	tlsAndSSLPluginIDs := []string{"81606", "69551", "15901", "57582", "83738", "51192", "35291", "124410", "20007", "89058", "60108", "31705", "26928", "83875", "78479", "104743", "157288", "45411", "42873", "65821"}
 	affectedHostsPluginID := map[string][]string{}
 	items := map[string][]string{}
@@ -349,7 +396,9 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 		})
 	}
 
-	sort.Sort(sort.Reverse(rows))
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].value.CVSSBaseScore > rows[j].value.CVSSBaseScore
+	})
 	var htmlRows []HTMLReportRows
 	for _, i := range rows {
 		switch {
@@ -370,12 +419,6 @@ func generateSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error
 
 	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
 
-	// In the template, we use rangeStruct to turn our struct values
-	// into a slice we can iterate over
-	htmlTemplate := `{{range .}}<tr>
-{{range rangeStruct .}} <td>{{.}}</td>
-{{end}}</tr>
-{{end}}`
 	t := template.New("t").Funcs(templateFuncs)
 	t, err := t.Parse(htmlTemplate)
 	if err != nil {
@@ -436,8 +479,13 @@ func RangeStructer(args ...interface{}) []interface{} {
 	return out
 }
 
+// writeSMBHostsToFile ...
 func writeSMBHostsToFile(data *Data, outputDir string) error {
-	targets, err := getTargetsByPorts(data, []string{"445"})
+	targets, err := getTargetsByPorts(data, []string{"139", "445"}, "tcp")
+	if err != nil {
+		return localio.LogError(err)
+	}
+	udpTargets, err := getTargetsByPorts(data, []string{"137"}, "udp")
 	if err != nil {
 		return localio.LogError(err)
 	}
@@ -446,11 +494,15 @@ func writeSMBHostsToFile(data *Data, outputDir string) error {
 	for target := range targets {
 		targetList = append(targetList, target)
 	}
+	for udpTarget := range udpTargets {
+		targetList = append(targetList, udpTarget)
+	}
 
 	uniqueTargets := localio.RemoveDuplicateStr(targetList)
 	if err = os.MkdirAll(fmt.Sprintf("%s/smb", outputDir), os.ModePerm); err != nil {
 		return localio.LogError(err)
 	}
+	sort.Sort(localio.StringSlice(uniqueTargets))
 
 	if err = localio.WriteLines(uniqueTargets, fmt.Sprintf("%s/smb/nessus-smb-hosts.txt", outputDir)); err != nil {
 		return localio.LogError(err)
@@ -459,6 +511,8 @@ func writeSMBHostsToFile(data *Data, outputDir string) error {
 }
 
 // Parse parses the nessus file and prints the results table
+//
+//nolint:gocognit
 func Parse(opts *Options) error {
 	data, err := getNessusData(opts.NessusFile)
 	if err != nil {
@@ -480,7 +534,7 @@ func Parse(opts *Options) error {
 
 	switch {
 	case opts.TestSSL:
-		_, err = generateSSLTLSReportHTMLFile(data, opts.Output)
+		_, err = generateNessusSSLTLSReportHTMLFile(data, opts.Output)
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -490,8 +544,14 @@ func Parse(opts *Options) error {
 		if err = generateWeakSSLTLSFindingsReportHTMLFile(opts.Output); err != nil {
 			return localio.LogError(err)
 		}
+		if err = generateSSLTLSVulnerabilityFindingsReportHTMLFile(opts.Output); err != nil {
+			return localio.LogError(err)
+		}
+		if err = generateCertificateErrorsSSLTLSFindingsReportHTMLFile(opts.Output); err != nil {
+			return localio.LogError(err)
+		}
 	case opts.StreamNmap:
-		targets, err := getAllTargetsOpenTCPPorts(data)
+		targets, err := getAllTargetsOpenPorts(data, "tcp")
 		if err != nil {
 			return localio.LogError(err)
 		}
@@ -499,11 +559,16 @@ func Parse(opts *Options) error {
 			return localio.LogError(err)
 		}
 	case opts.AsyncNmap:
-		targets, err := getAllTargetsOpenTCPPorts(data)
+		targets, err := getAllTargetsOpenPorts(data, "tcp")
 		if err != nil {
 			return localio.LogError(err)
 		}
 		if err = runNmapAsync(opts.Output, targets); err != nil {
+			return localio.LogError(err)
+		}
+	case opts.AsyncNmapSVCScripts:
+		// runs nmap scripts based upon services
+		if err = runNmapServiceScripts(opts.Output, data); err != nil {
 			return localio.LogError(err)
 		}
 	case opts.Nuclei:

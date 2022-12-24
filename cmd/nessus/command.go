@@ -37,6 +37,7 @@ Example Commands:
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap
+	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap-svc-scripts
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --stream-nmap
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --nuclei
 	gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --enum4linux-ng
@@ -46,10 +47,6 @@ Example Commands:
 		opts := Options{}
 		if err = opts.LoadFromCommand(cmd); err != nil {
 			localio.LogFatal(err, "Could not load Command Opts")
-		}
-		if opts.nessusOptions.Output == "" {
-			localio.LogWarningf("No output directory specified: %s, using /tmp/parsed_nessus", opts.nessusOptions.Output)
-			opts.nessusOptions.Output = "/tmp/parsed_nessus"
 		}
 
 		if err = os.MkdirAll(opts.nessusOptions.Output, 0750); err != nil {

@@ -146,8 +146,8 @@ func runNmapAsync(outputDir string, targets map[string][]string) error {
 
 	var wg sync.WaitGroup
 
-	// Spawn 5 goroutines
-	for i := 0; i < 5; i++ {
+	// Spawn 10 goroutines
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(num int, w *sync.WaitGroup) {
 			defer w.Done()

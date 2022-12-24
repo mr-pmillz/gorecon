@@ -74,7 +74,7 @@ func setupEnum4Linux(outputDir string) (*Enum4LinuxInfo, error) {
 
 // runEnum4LinuxNG runs enum4Linux-NG concurrently with 5 goroutines in parallel.
 func runEnum4LinuxNG(data *Data, outputDir string) error {
-	targets, err := getTCPTargetsBySVCName(data, []string{"cifs", "smb", "epmap", "ldap"})
+	targets, err := getTargetsBySVCName(data, []string{"cifs", "smb", "epmap", "ldap"}, "tcp")
 	if err != nil {
 		return localio.LogError(err)
 	}

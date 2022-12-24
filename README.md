@@ -207,6 +207,8 @@ Global Flags:
 
 ## Nessus Parser
 
+In addition to parsing a nessus file, additional enumeration can be performed with optional flags
+
 ```shell
 parses nessus file, prints and logs hosts and plugin id data etc.
 
@@ -215,6 +217,7 @@ Example Commands:
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --testssl
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap
+        gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --async-nmap-svc-scripts
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --stream-nmap
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --nuclei
         gorecon nessus --nessus-file path/to/scan-results.nessus --output path/to/output-dir --enum4linux-ng
@@ -223,14 +226,15 @@ Usage:
   gorecon nessus [flags]
 
 Flags:
-      --async-nmap           runs nmap asynchronously in 5 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts
-      --enum4linux-ng        runs enum4linux-ng against all hosts parsed from nessus within svc_name attribute slice []string{"cifs", "smb", "epmap", "ldap"} also runs initial crackmapexec smb against just port 445 hosts
-  -h, --help                 help for nessus
-  -n, --nessus-file string   full or relative path to nessus file.nessus
-      --nuclei               runs nuclei automatic templates against all web services
-  -o, --output string        report output dir
-      --stream-nmap          streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts
-      --testssl              runs Testssl.sh against all tls and ssl nessus findings hosts
+      --async-nmap               runs nmap asynchronously in 10 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts
+      --async-nmap-svc-scripts   runs nmap asynchronously in 30 parallel goroutines with scripts fine tuned per service
+      --enum4linux-ng            runs enum4linux-ng against all hosts parsed from nessus within svc_name attribute slice []string{"cifs", "smb", "epmap", "ldap"} also runs initial crackmapexec smb against just port 445 hosts
+  -h, --help                     help for nessus
+  -n, --nessus-file string       full or relative path to nessus file.nessus
+      --nuclei                   runs nuclei automatic templates against all web services
+  -o, --output string            report output dir
+      --stream-nmap              streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts
+      --testssl                  runs Testssl.sh against all tls and ssl nessus findings hosts
 
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml

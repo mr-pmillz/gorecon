@@ -271,12 +271,6 @@ type TestSSLHTMLReportRows struct {
 	Hosts string
 }
 
-const (
-	INFO = "INFO"
-	OK   = "OK"
-	LOW  = "LOW"
-)
-
 // generateWeakSSLTLSFindingsReportHTMLFile writes an HTML report file with all the Testssl.sh confirmed Findings.
 //
 //nolint:gocognit
@@ -306,8 +300,14 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 					items["TLS 1.1 Protocol Supported"] = []string{"TLS 1.1 Protocol Supported", protocol.ID, protocol.Finding, protocol.Severity}
 				}
 			}
+			for _, cipher := range info.ServerPreferences {
+				if cipher.Severity != OK && cipher.Severity != INFO {
+					affectedHosts[cipher.ID] = append(affectedHosts[cipher.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Weak Ciphers"] = []string{"Weak Ciphers", cipher.ID, cipher.Finding, cipher.Severity}
+				}
+			}
 			for _, cipher := range info.Ciphers {
-				if cipher.Severity != OK && cipher.Severity != INFO && cipher.Severity != LOW {
+				if cipher.Severity != OK && cipher.Severity != INFO {
 					affectedHosts[cipher.ID] = append(affectedHosts[cipher.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
 					items["Weak Ciphers"] = []string{"Weak Ciphers", cipher.ID, cipher.Finding, cipher.Severity}
 				}
@@ -351,7 +351,7 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 			})
 		}
 	}
-	sort.Slice(htmlRows, func(i, j int) bool {
+	sort.SliceStable(htmlRows, func(i, j int) bool {
 		switch strings.Compare(htmlRows[i].Key, htmlRows[j].Key) {
 		case -1:
 			return true
@@ -363,12 +363,6 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 
 	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
 
-	// In the template, we use rangeStruct to turn our struct values
-	// into a slice we can iterate over
-	htmlTemplate := `{{range .}}<tr>
-{{range rangeStruct .}} <td>{{.}}</td>
-{{end}}</tr>
-{{end}}`
 	t := template.New("t").Funcs(templateFuncs)
 	t, err = t.Parse(htmlTemplate)
 	if err != nil {
@@ -398,6 +392,291 @@ func generateWeakSSLTLSFindingsReportHTMLFile(outputDir string) error {
 	}
 
 	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/server-supports-weak-transport-layer-security-report.html", outputDir)); err != nil {
+		return localio.LogError(err)
+	}
+
+	return nil
+}
+
+// generateSSLTLSVulnerabilityFindingsReportHTMLFile writes an HTML report file with all the Testssl.sh confirmed Vulnerability findings.
+// TODO: Rather than duplicating this function, re-write it in a re-usable universal way to prevent code duplication
+// For now, duplicating code is faster and easier ¯\_(ツ)_/¯
+//
+//nolint:gocognit
+func generateSSLTLSVulnerabilityFindingsReportHTMLFile(outputDir string) error {
+	testSSLReports, err := parseTestSSLResults(outputDir)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	affectedHosts := map[string][]string{}
+	items := map[string][]string{}
+	for _, report := range testSSLReports.Report {
+		for _, info := range report.ScanResult {
+			for _, vuln := range info.Vulnerabilities {
+				switch {
+				case vuln.ID == "heartbleed" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["heartbleed"] = []string{"heartbleed", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "CCS" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["CCS"] = []string{"CCS", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "ticketbleed" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["ticketbleed"] = []string{"ticketbleed", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "ROBOT" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["ROBOT"] = []string{"ROBOT", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "secure_renego" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["secure_renego"] = []string{"secure_renego", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "secure_client_renego" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["secure_client_renego"] = []string{"secure_client_renego", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "CRIME_TLS" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["CRIME_TLS"] = []string{"CRIME_TLS", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "BREACH" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["BREACH"] = []string{"BREACH", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "POODLE_SSL" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["POODLE_SSL"] = []string{"POODLE_SSL", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "fallback_SCSV" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["fallback_SCSV"] = []string{"fallback_SCSV", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "SWEET32" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["SWEET32"] = []string{"SWEET32", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "FREAK" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["FREAK"] = []string{"FREAK", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "DROWN" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["DROWN"] = []string{"DROWN", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "DROWN_hint" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["DROWN_hint"] = []string{"DROWN_hint", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "LOGJAM-common_primes" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["LOGJAM-common_primes"] = []string{"LOGJAM-common_primes", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "LOGJAM" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["LOGJAM"] = []string{"LOGJAM", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "BEAST" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["BEAST"] = []string{"BEAST", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "LUCKY13" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["LUCKY13"] = []string{"LUCKY13", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "winshock" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["winshock"] = []string{"winshock", vuln.ID, vuln.Finding, vuln.Severity}
+				case vuln.ID == "RC4" && vuln.Severity != OK && vuln.Severity != INFO:
+					affectedHosts[vuln.ID] = append(affectedHosts[vuln.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["RC4"] = []string{"RC4", vuln.ID, vuln.Finding, vuln.Severity}
+				}
+			}
+		}
+	}
+
+	rows := make(testSSLFindings, 0, len(items))
+	for finding, info := range items {
+		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
+		relativeOutputFilePathHosts := fmt.Sprintf("confirmed-%s-vulnerability-hosts.txt", outputFileName)
+		absOutputFilePathHosts := fmt.Sprintf("%s/ssl/confirmed-%s-vulnerability-hosts.txt", outputDir, outputFileName)
+		sort.Sort(localio.StringSlice(affectedHosts[info[1]]))
+		sortedHosts := localio.RemoveDuplicateStr(affectedHosts[info[1]])
+		rows = append(rows, TestSSLEntry{
+			key: finding,
+			value: &Row{
+				Finding:  finding,
+				Hosts:    strings.Join(sortedHosts, "<br>"),
+				Count:    strconv.Itoa(len(sortedHosts)),
+				FileName: relativeOutputFilePathHosts,
+			},
+		})
+		if err := localio.WriteLines(sortedHosts, absOutputFilePathHosts); err != nil {
+			return localio.LogError(err)
+		}
+	}
+
+	var htmlRows []TestSSLHTMLReportRows
+	for _, i := range rows {
+		switch {
+		case len(strings.Split(i.value.Hosts, "<br>")) > 50:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: fmt.Sprintf("<b>Count:</b> %s<br><b>Filename:</b> %s", i.value.Count, i.value.FileName),
+			})
+		default:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: i.value.Hosts,
+			})
+		}
+	}
+	sort.SliceStable(htmlRows, func(i, j int) bool {
+		switch strings.Compare(htmlRows[i].Key, htmlRows[j].Key) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+		return htmlRows[i].Key > htmlRows[j].Key
+	})
+
+	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
+
+	t := template.New("t").Funcs(templateFuncs)
+	t, err = t.Parse(htmlTemplate)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var sslTemplateBuf bytes.Buffer
+	if err = t.Execute(&sslTemplateBuf, htmlRows); err != nil {
+		return localio.LogError(err)
+	}
+
+	reportTemplate, err := template.New("reportTemplate").Parse(testSSLReportTable)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var reportTemplateBuf bytes.Buffer
+	if err = reportTemplate.Execute(&reportTemplateBuf, SSLTLSRows{
+		Rows: sslTemplateBuf.String(),
+	}); err != nil {
+		return localio.LogError(err)
+	}
+
+	sslDir := fmt.Sprintf("%s/ssl", outputDir)
+	if err = os.MkdirAll(sslDir, os.ModePerm); err != nil {
+		return localio.LogError(err)
+	}
+
+	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/testssl-tls-ssl-vulnerabilities-report.html", outputDir)); err != nil {
+		return localio.LogError(err)
+	}
+
+	return nil
+}
+
+// generateWeakSSLTLSFindingsReportHTMLFile writes an HTML report file with all the Testssl.sh confirmed Findings.
+// TODO: Rather than duplicating this function, re-write it in a re-usable universal way to prevent code duplication
+// For now, duplicating code is faster and easier ¯\_(ツ)_/¯
+//
+//nolint:gocognit
+func generateCertificateErrorsSSLTLSFindingsReportHTMLFile(outputDir string) error {
+	testSSLReports, err := parseTestSSLResults(outputDir)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	affectedHosts := map[string][]string{}
+	items := map[string][]string{}
+	for _, report := range testSSLReports.Report {
+		for _, info := range report.ScanResult {
+			for _, servDef := range info.ServerDefaults {
+				switch {
+				case servDef.ID == "cert_chain_of_trust" && servDef.Severity == CRITICAL:
+					affectedHosts[servDef.ID] = append(affectedHosts[servDef.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Self-Signed Certificate"] = []string{"Self-Signed Certificate", servDef.ID, servDef.Finding, servDef.Severity}
+				case servDef.ID == "cert_trust" && servDef.Severity == HIGH:
+					affectedHosts[servDef.ID] = append(affectedHosts[servDef.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Certificate does not match supplied URI"] = []string{"Certificate does not match supplied URI", servDef.ID, servDef.Finding, servDef.Severity}
+				case servDef.ID == "cert_subjectAltName" && servDef.Severity == MEDIUM:
+					affectedHosts[servDef.ID] = append(affectedHosts[servDef.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Certificate does not match supplied URI"] = []string{"Certificate does not match supplied URI", servDef.ID, servDef.Finding, servDef.Severity}
+				case servDef.ID == "cert_signatureAlgorithm" && servDef.Severity == MEDIUM:
+					affectedHosts[servDef.ID] = append(affectedHosts[servDef.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Certificate signed using weak signature algorithm SHA1 with RSA"] = []string{"Certificate signed using weak signature algorithm SHA1 with RSA", servDef.ID, servDef.Finding, servDef.Severity}
+				case servDef.ID == "cert_revocation" && servDef.Severity == HIGH:
+					affectedHosts[servDef.ID] = append(affectedHosts[servDef.ID], fmt.Sprintf("%s:%s", info.TargetHost, info.Port))
+					items["Neither CRL nor OCSP URI provided"] = []string{"Neither CRL nor OCSP URI provided", servDef.ID, servDef.Finding, servDef.Severity}
+				}
+			}
+		}
+	}
+
+	rows := make(testSSLFindings, 0, len(items))
+	for finding, info := range items {
+		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
+		relativeOutputFilePathHosts := fmt.Sprintf("confirmed-%s-hosts.txt", outputFileName)
+		absOutputFilePathHosts := fmt.Sprintf("%s/ssl/confirmed-%s-hosts.txt", outputDir, outputFileName)
+		sort.Sort(localio.StringSlice(affectedHosts[info[1]]))
+		sortedHosts := localio.RemoveDuplicateStr(affectedHosts[info[1]])
+		rows = append(rows, TestSSLEntry{
+			key: finding,
+			value: &Row{
+				Finding:  finding,
+				Hosts:    strings.Join(sortedHosts, "<br>"),
+				Count:    strconv.Itoa(len(sortedHosts)),
+				FileName: relativeOutputFilePathHosts,
+			},
+		})
+		if err := localio.WriteLines(sortedHosts, absOutputFilePathHosts); err != nil {
+			return localio.LogError(err)
+		}
+	}
+
+	var htmlRows []TestSSLHTMLReportRows
+	for _, i := range rows {
+		switch {
+		case len(strings.Split(i.value.Hosts, "<br>")) > 50:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: fmt.Sprintf("<b>Count:</b> %s<br><b>Filename:</b> %s", i.value.Count, i.value.FileName),
+			})
+		default:
+			htmlRows = append(htmlRows, TestSSLHTMLReportRows{
+				Key:   i.key,
+				Hosts: i.value.Hosts,
+			})
+		}
+	}
+	sort.SliceStable(htmlRows, func(i, j int) bool {
+		switch strings.Compare(htmlRows[i].Key, htmlRows[j].Key) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+		return htmlRows[i].Key > htmlRows[j].Key
+	})
+
+	templateFuncs := template.FuncMap{"rangeStruct": RangeStructer}
+
+	t := template.New("t").Funcs(templateFuncs)
+	t, err = t.Parse(htmlTemplate)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var sslTemplateBuf bytes.Buffer
+	if err = t.Execute(&sslTemplateBuf, htmlRows); err != nil {
+		return localio.LogError(err)
+	}
+
+	reportTemplate, err := template.New("reportTemplate").Parse(testSSLReportTable)
+	if err != nil {
+		return localio.LogError(err)
+	}
+
+	var reportTemplateBuf bytes.Buffer
+	if err = reportTemplate.Execute(&reportTemplateBuf, SSLTLSRows{
+		Rows: sslTemplateBuf.String(),
+	}); err != nil {
+		return localio.LogError(err)
+	}
+
+	sslDir := fmt.Sprintf("%s/ssl", outputDir)
+	if err = os.MkdirAll(sslDir, os.ModePerm); err != nil {
+		return localio.LogError(err)
+	}
+
+	if err = localio.CopyStringToFile(reportTemplateBuf.String(), fmt.Sprintf("%s/ssl/certificate-errors-report.html", outputDir)); err != nil {
 		return localio.LogError(err)
 	}
 

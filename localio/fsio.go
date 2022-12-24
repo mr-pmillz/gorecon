@@ -802,15 +802,28 @@ func parse(f io.Reader) (Resolver, error) {
 	}, nil
 }
 
-func Reverse(input string) string {
-	s := strings.Split(input, " ")
-	reverse(s)
-	return strings.Join(s, " ")
-}
+// func Reverse(input string) string {
+//	s := strings.Split(input, " ")
+//	reverse(s)
+//	return strings.Join(s, " ")
+//}
+//
+// func reverse(ss []string) {
+//	last := len(ss) - 1
+//	for i := 0; i < len(ss)/2; i++ {
+//		ss[i], ss[last-i] = ss[last-i], ss[i]
+//	}
+// }
 
-func reverse(ss []string) {
-	last := len(ss) - 1
-	for i := 0; i < len(ss)/2; i++ {
-		ss[i], ss[last-i] = ss[last-i], ss[i]
+func PrependString(strs []string, s string) []string {
+	// Create a new slice to hold the modified strings
+	modified := make([]string, len(strs))
+
+	// Prepend the parameter string to each element in the slice
+	for i, str := range strs {
+		modified[i] = s + str
 	}
+
+	// Return the modified slice
+	return modified
 }
