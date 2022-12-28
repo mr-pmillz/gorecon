@@ -24,6 +24,7 @@ MODULES: |-
   recon/hosts-hosts/resolve
   recon/hosts-hosts/reverse_resolve
   recon/hosts-hosts/ssltools
+  recon/hosts-ports/shodan_ip
   recon/netblocks-companies/censys_netblock_company
   recon/domains-companies/censys_companies
   recon/domains-contacts/hunter_io

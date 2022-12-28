@@ -58,7 +58,7 @@ func runDNSRecon(domains []string, outputDir string) error {
 
 	for _, domain := range domains {
 		// axfr can cause dnsrecon to hang / timeout indefinitely. Removed axfr option to the -t argument.
-		cmd := fmt.Sprintf("source %s/dnsrecon/bin/activate && cd %s/dnsrecon && dnsrecon -d %s -t std,bing,crt -c %s/%s-dnsrecon-results.csv", virtualEnvsDir, toolsDir, domain, outputDir, domain)
+		cmd := fmt.Sprintf("source %s/dnsrecon/bin/activate ; cd %s/dnsrecon ; dnsrecon -d %s -t std,bing,crt -c %s/%s-dnsrecon-results.csv ; deactivate", virtualEnvsDir, toolsDir, domain, outputDir, domain)
 		if err := localio.RunCommandPipeOutput(cmd); err != nil {
 			// ignore err and continue enumeration
 			localio.LogWarningf("dnsrecon failed :(\n%+v\ncontinuing reconnaissance", err)

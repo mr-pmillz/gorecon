@@ -278,7 +278,7 @@ func Infof(format string, args ...interface{}) {
 // LogError ... TODO improve loggers
 func LogError(err error) error {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelError)
-	gologger.Error().Str("Error", err.Error())
+	gologger.Error()
 	return err
 }
 

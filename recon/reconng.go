@@ -19,7 +19,7 @@ func configureReconNGDependencies() error {
 	var notInstalled []string
 	installed, err := localio.NewPipInstalled()
 	if err != nil {
-		return err
+		return localio.LogError(err)
 	}
 	deps := []string{
 		"pyaes",
@@ -51,19 +51,19 @@ func configureReconNGDependencies() error {
 		packagesToInstall := strings.Join(notInstalled, " ")
 		if localio.IsRoot() {
 			cmd := fmt.Sprintf("python3 -m pip install %s", packagesToInstall)
-			if err := localio.RunCommandPipeOutput(cmd); err != nil {
-				return err
+			if err = localio.RunCommandPipeOutput(cmd); err != nil {
+				return localio.LogError(err)
 			}
 		} else {
 			cmd := fmt.Sprintf("python3 -m pip install %s --user", packagesToInstall)
-			if err := localio.RunCommandPipeOutput(cmd); err != nil {
-				return err
+			if err = localio.RunCommandPipeOutput(cmd); err != nil {
+				return localio.LogError(err)
 			}
 		}
 	}
 
 	if err = copyCensysScripts(); err != nil {
-		return err
+		return localio.LogError(err)
 	}
 
 	return nil
