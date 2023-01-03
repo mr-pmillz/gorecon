@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/projectdiscovery/gologger"
 	"strings"
 
 	"github.com/mr-pmillz/gorecon/v2/cmd/nessus"
@@ -18,7 +19,7 @@ import (
 
 var (
 	cfgFile string
-	version = "v2.3.5"
+	version = "v2.3.6"
 )
 
 const (
@@ -41,6 +42,7 @@ func init() {
 	RootCmd.AddCommand(recon.Command)
 	RootCmd.AddCommand(srctleaks.Command)
 	RootCmd.AddCommand(nessus.Command)
+	showBanner()
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -90,4 +92,22 @@ func bindFlags(cmd *cobra.Command) {
 			}
 		}
 	})
+}
+
+var banner = ` 
+   ___             ___                                      ~ ~~  ~~ o o o          
+  / __|    ___    | _ \    ___     __      ___    _ _                      o        
+ | (_ |   / _ \   |   /   / -_)   / _|    / _ \  | ' \   _________,_____     o     
+  \___|   \___/   |_|_\   \___|   \__|    \___/  |_||_|  |        | |DD|__mm_[].   
+_|"""""|_|"""""|_|"""""|_|"""""|_|"""""|_|"""""|_|"""""|_]________|_|__|_______)< 
+"'-0-0-'"'-0-0-'"'-0-0-'"'-0-0-'"'-0-0-'"'-0-0-'"'-0-0-'"=!00!!00!'"'oo-OOOO-oo\_
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+`
+
+// showBanner prints the GoRecon Banner to stdout
+func showBanner() {
+	versionBanner := strings.ReplaceAll(banner, "|        |", fmt.Sprintf("] %s |", version))
+	gologger.Print().Msgf("%s\n", versionBanner)
+	gologger.Print().Msgf("\t  Brought to you by https://www.blackhillsinfosec.com/\n\n")
+	gologger.Print().Msgf("\n")
 }

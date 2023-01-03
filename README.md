@@ -30,12 +30,12 @@ Currently, the recon sub command runs the following tools in this order
 1. [recon-ng](https://github.com/lanmaster53/recon-ng)
 2. [subfinder](https://github.com/projectdiscovery/subfinder)
 3. [httpx](https://github.com/projectdiscovery/httpx)
-4. [katana](https://github.com/projectdiscovery/katana)
-5. [gowitness](https://github.com/sensepost/gowitness)
+4. [gowitness](https://github.com/sensepost/gowitness)
+5. [katana](https://github.com/projectdiscovery/katana)
 
 Optional recon
-1. [dnsrecon](https://github.com/darkoperator/dnsrecon)
-2. [Amass](https://github.com/OWASP/Amass)
+- [dnsrecon](https://github.com/darkoperator/dnsrecon)
+- [Amass](https://github.com/OWASP/Amass)
 
 **Brought to you by:**
 
@@ -95,10 +95,15 @@ For Amass, GoRecon will generate the scope portions of the config.ini for you
   - see [Amass-Config](https://github.com/OWASP/Amass/blob/master/examples/config.ini) for all the available options
   - The base-template config.ini is embedded into the gorecon binary using the embed pkg
   - if you want to make a change open up an issue or make a pull request.
-  - put your Amass data-sources in a file and point to it with either an env variable, gorecon's config.yaml, or the --amass-data-sources argument.
+  - put your Amass data-sources in a file and point to it with either an env variable, GoRecon's config.yaml, or the --amass-data-sources argument.
+    - You can also add data_sources to ignore such as CommonCrawl which can cause amass to timeout/hang
     - the contents of the AMASS_DATA_SOURCES|--amass-data-sources file should be like the following example:
 
 ```ini
+# Are there any data sources that should be disabled?
+[data_sources.disabled]
+data_source = CommonCrawl
+
 # https://passivedns.cn (Contact)
 [data_sources.360PassiveDNS]
 [data_sources.360PassiveDNS.Credentials]

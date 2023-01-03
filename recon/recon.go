@@ -38,11 +38,34 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 				}
 			}
 		}
+	} else {
+		// useful if amass proc hangs and want to re-run without the --run-amass flag on second run while retaining output into scope object.
+		if exists, err := localio.Exists(fmt.Sprintf("%s/amass/enum.json", opts.Output)); err == nil && exists {
+			amassData, err := parseAmassResults(fmt.Sprintf("%s/amass/enum.json", opts.Output))
+			if err != nil {
+				return localio.LogError(err)
+			}
+			if amassData != nil {
+				for _, i := range amassData.Data {
+					if !localio.Contains(h.Domains, i.Name) {
+						h.SubDomains = append(h.SubDomains, i.Name)
+					}
+					for _, j := range i.Addresses {
+						if !localio.Contains(h.ASNs, strconv.Itoa(j.Asn)) {
+							h.ASNs = append(h.ASNs, strconv.Itoa(j.Asn))
+						}
+						if !localio.Contains(h.IPv4s, j.IP) {
+							h.IPv4s = append(h.IPv4s, j.IP)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if opts.RunDNSRecon {
 		if err := runDNSRecon(h.Domains, opts.Output); err != nil {
-			return localio.LogError(err)
+			localio.LogWarningf("dnsrecon encountered an error, Error: \n%+v\ncontinuing remaining recon", err)
 		}
 	}
 
@@ -118,13 +141,14 @@ func (h *Hosts) RunAllRecon(opts *Options) error {
 		return err
 	}
 
-	// fast content-discovery
-	if err = runKatana(urlFile, opts); err != nil {
+	if err = runGoWitness(urlFile, opts.Output); err != nil {
 		return localio.LogError(err)
 	}
 
-	if err = runGoWitness(urlFile, opts.Output); err != nil {
-		return localio.LogError(err)
+	// fast content-discovery
+	if err = runKatana(urlFile, opts); err != nil {
+		// return localio.LogError(err)
+		localio.LogWarningf("katana encountered an error or timeout issue Error: \n%+v", err)
 	}
 
 	return nil

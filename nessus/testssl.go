@@ -43,21 +43,13 @@ func runTestSSL(outputDir string, verbose bool) error {
 	}
 
 	startTLSServices := map[int]string{
-		21:   "ftp",
-		23:   "telnet",
-		24:   "lmtp",
-		25:   "smtp",
-		110:  "pop3",
-		119:  "nntp",
-		143:  "imap",
-		389:  "ldap",
-		465:  "smtp",
 		563:  "nntp",
 		587:  "smtp",
 		636:  "ldap",
 		993:  "imap",
 		995:  "pop3",
 		2000: "sieve",
+		2525: "smtp",
 		3268: "ldap",
 		3269: "ldap",
 		3306: "mysql",
