@@ -43,6 +43,7 @@ func runTestSSL(outputDir string, verbose bool) error {
 	}
 
 	startTLSServices := map[int]string{
+		25:   "smtp",
 		563:  "nntp",
 		587:  "smtp",
 		636:  "ldap",
