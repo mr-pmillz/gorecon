@@ -499,14 +499,17 @@ func writeSMBHostsToFile(data *Data, outputDir string) error {
 	}
 
 	uniqueTargets := localio.RemoveDuplicateStr(targetList)
-	if err = os.MkdirAll(fmt.Sprintf("%s/smb", outputDir), os.ModePerm); err != nil {
-		return localio.LogError(err)
-	}
 	sort.Sort(localio.StringSlice(uniqueTargets))
 
-	if err = localio.WriteLines(uniqueTargets, fmt.Sprintf("%s/smb/nessus-smb-hosts.txt", outputDir)); err != nil {
-		return localio.LogError(err)
+	if len(uniqueTargets) != 0 {
+		if err = os.MkdirAll(fmt.Sprintf("%s/smb", outputDir), os.ModePerm); err != nil {
+			return localio.LogError(err)
+		}
+		if err = localio.WriteLines(uniqueTargets, fmt.Sprintf("%s/smb/nessus-smb-hosts.txt", outputDir)); err != nil {
+			return localio.LogError(err)
+		}
 	}
+
 	return nil
 }
 

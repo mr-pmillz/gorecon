@@ -23,7 +23,7 @@ func ConfigureCommand(cmd *cobra.Command) error {
 	cmd.PersistentFlags().BoolP("stream-nmap", "", false, "streams nmap synchronously with default scripts against all open ports for low through critical severity findings hosts")
 	cmd.PersistentFlags().BoolP("async-nmap", "", false, "runs nmap asynchronously in 10 parallel goroutines with default scripts against all open ports for low through critical severity findings hosts")
 	cmd.PersistentFlags().BoolP("async-nmap-svc-scripts", "", false, "runs nmap asynchronously in 30 parallel goroutines with scripts fine tuned per service")
-	cmd.PersistentFlags().BoolP("nuclei", "", false, "runs nuclei automatic templates against all web services")
+	cmd.PersistentFlags().BoolP("nuclei", "", false, "runs nuclei scan with critical,high, and medium severity templates against all web services")
 	cmd.PersistentFlags().BoolP("enum4linux-ng", "", false, "runs enum4linux-ng against all hosts parsed from nessus within svc_name attribute slice []string{\"cifs\", \"smb\", \"epmap\", \"ldap\"} also runs initial crackmapexec smb against just port 445 hosts")
 	cmd.MarkFlagsMutuallyExclusive("async-nmap", "stream-nmap", "testssl", "nuclei", "enum4linux-ng")
 	_ = cmd.MarkFlagRequired("nessus-file")

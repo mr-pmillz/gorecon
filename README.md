@@ -22,20 +22,11 @@ Table of Contents
   * [recon](#recon)
   * [srctleaks](#srctleaks)
   * [Nessus Parser](#nessus-parser)
+  * [Screenshots](#screenshots)
 
 ## About
 
-This project was built to automate various repetitive tasks for external recon gathering.
-Currently, the recon sub command runs the following tools in this order
-1. [recon-ng](https://github.com/lanmaster53/recon-ng)
-2. [subfinder](https://github.com/projectdiscovery/subfinder)
-3. [httpx](https://github.com/projectdiscovery/httpx)
-4. [gowitness](https://github.com/sensepost/gowitness)
-5. [katana](https://github.com/projectdiscovery/katana)
-
-Optional recon
-- [dnsrecon](https://github.com/darkoperator/dnsrecon)
-- [Amass](https://github.com/OWASP/Amass)
+This project was built to automate various penetration testing tasks such as reconnaissance, parsing nessus scan results and running additional tools, results analysis for reporting, and more.
 
 **Brought to you by:**
 
@@ -63,23 +54,24 @@ Or download the program directly with go
 go install github.com/mr-pmillz/gorecon/v2@latest
 ```
 
-some golang tools in this project (for instance, gowitness) that don't have a pkg available to implement natively rely on go module installation, make sure "$GOPATH/bin" is in your PATH env var.
-ex. if not in your path, add it to your .bash_profile or ~/.zshrc or ~/.bashrc etc..
+some golang tools in this project that don't have a pkg available to implement natively rely on go module installation, make sure "HOME/go/bin" is in your PATH env var.
+ex. if not already configured, add the following to your .bash_profile or ~/.zshrc or ~/.bashrc etc..
 ```bash
-export PATH="$PATH:$GOPATH/bin"
-# or if you know the full path and dont have $GOPATH set, can do something like:
-export PATH="$PATH:/home/username/go/bin"
+[[ ":$PATH:" != *":${HOME}/go/bin:"* ]] && export PATH="${PATH}:${HOME}/go/bin"
+# Set GOPATH
+if [[ -z "${GOPATH}" ]]; then export GOPATH="${HOME}/go"; fi
 ```
 
 create your [config.yaml](config/config.yaml.dist) file
 ensure netblock ips are in IPv4 CIDR range formats. For a single ip, you would use 10.10.10.111/32
 **DO NOT PUT COMMENTS in your config.yaml file.** This will break vipers parsing of the configuration.
+It is okay to leave NETBLOCK and/or OUT_OF_SCOPE empty if using the config.yaml file
 
 ```shell
-cp config/config.yaml.dist config.yaml
+wget https://raw.githubusercontent.com/mr-pmillz/gorecon/master/config/config.yaml.dist -O config.yaml
 ```
 
-For best results, ensure you add your api keys to recon-ng.
+For best results, add your api keys to recon-ng.
 Can also add api keys file path to subfinder via config.yaml.
 For example
 ```yaml
@@ -119,6 +111,7 @@ apikey = API-KEY-HERE
 ## Usage
 
 GoRecon supports yaml configuration files along with cli arguments. Cli args should override values in the configuration file.
+The optional config.yaml file is only geared towards the recon and srctleaks sub commands. It is recommended to use it with the recon sub command.
 
 ```shell
 Automates recon-ng based upon cli args or yaml configuration file. More features coming soon!
@@ -145,6 +138,17 @@ Run GoRecon from a yaml configuration file.
 See [config.yaml](config/config.yaml.dist)
 
 ## recon
+
+The recon sub command runs the following tools in this order
+1. [recon-ng](https://github.com/lanmaster53/recon-ng)
+2. [subfinder](https://github.com/projectdiscovery/subfinder)
+3. [httpx](https://github.com/projectdiscovery/httpx)
+4. [gowitness](https://github.com/sensepost/gowitness)
+5. [katana](https://github.com/projectdiscovery/katana)
+
+Optional recon
+- [dnsrecon](https://github.com/darkoperator/dnsrecon)
+- [Amass](https://github.com/OWASP/Amass)
 
 ```shell
 Run recon enumeration
@@ -181,9 +185,7 @@ Global Flags:
 Find Public GitHub Organization for the Company specified in your config.yaml.
 Runs [GitLeaks](https://github.com/zricethezav/gitleaks) natively in golang against all identified Public Repos
 Also logs Repos and Organization Users to a file and removes repos with no found secrets.
-
-**TL:DR**
-If you're not finding an orgs public GitHub account, you may want to search GitHub manually for the org and then specify the -c flag accordingly
+Currently, if the main organization is not of the "organization" metadata type, the user will be ignored even if it matches the target org name specified.
 
 ```shell
 Checks for a public organization based upon company name arg and clones all repos then runs gitleaks on them to check for secrets.
@@ -244,3 +246,7 @@ Flags:
 Global Flags:
       --config string   config file (default is APP_ROOT/config/config.yaml
 ```
+
+## Screenshots
+
+![Nessus Parser](https://github.com/mr-pmillz/gorecon/blob/master/docs/img/nessus-parser-example.png "Nessus Parser")
