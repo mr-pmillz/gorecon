@@ -1,0 +1,149 @@
+{
+    "target": {
+        "host": "10.10.10.10"
+    },
+    "credentials": {
+        "auth_method": "null",
+        "user": "",
+        "password": "",
+        "domain": "",
+        "ticket_file": "",
+        "nthash": "",
+        "random_user": "zmbzkbuk"
+    },
+    "listeners": {
+        "LDAP": {
+            "port": 389,
+            "accessible": false
+        },
+        "LDAPS": {
+            "port": 636,
+            "accessible": false
+        },
+        "SMB": {
+            "port": 445,
+            "accessible": true
+        },
+        "SMB over NetBIOS": {
+            "port": 139,
+            "accessible": true
+        }
+    },
+    "domain": "GORECON",
+    "smb_dialects": {
+        "Supported dialects": {
+            "SMB 1.0": false,
+            "SMB 2.02": false,
+            "SMB 2.1": true,
+            "SMB 3.0": true,
+            "SMB 3.1.1": true
+        },
+        "Preferred dialect": "SMB 3.0",
+        "SMB1 only": false,
+        "SMB signing required": false
+    },
+    "smb_domain_info": {
+        "NetBIOS computer name": "GORECON",
+        "NetBIOS domain name": "",
+        "DNS domain": "",
+        "FQDN": "hacktheplanet.gorecon.bhis",
+        "Derived membership": "workgroup member",
+        "Derived domain": "unknown"
+    },
+    "sessions": {
+        "sessions_possible": true,
+        "null": true,
+        "password": false,
+        "kerberos": false,
+        "nthash": false,
+        "random_user": true
+    },
+    "rpc_domain_info": {
+        "Domain": "GORECON",
+        "Domain SID": "NULL SID",
+        "Membership": "workgroup member"
+    },
+    "os_info": {
+        "OS": "Linux/Unix (Samba 4.13.8)",
+        "OS version": "6.1",
+        "OS release": "",
+        "OS build": "0",
+        "Native OS": "not supported",
+        "Native LAN manager": "not supported",
+        "Platform id": "500",
+        "Server type": "0x1234567",
+        "Server type string": "some kind of system type"
+    },
+    "users": {
+        "21002": {
+            "username": "admin",
+            "name": "Example User",
+            "acb": "0x00000010",
+            "description": ""
+        },
+        "1001": {
+            "username": "Unix User\\example"
+        },
+        "1002": {
+            "username": "Unix User\\zerocool"
+        },
+        "1003": {
+            "username": "Unix User\\dennisnedry"
+        },
+        "501": {
+            "username": "GORECON\\nobody"
+        }
+    },
+    "groups": {
+        "1001": {
+            "groupname": "Unix Group\\foo",
+            "type": "domain"
+        },
+        "1002": {
+            "groupname": "Unix Group\\bar",
+            "type": "domain"
+        },
+        "513": {
+            "groupname": "GORECON\\baz",
+            "type": "domain"
+        },
+        "544": {
+            "groupname": "BUILTIN\\Administrators",
+            "type": "builtin"
+        },
+        "545": {
+            "groupname": "BUILTIN\\Users",
+            "type": "builtin"
+        }
+    },
+    "services": {
+        "Spooler": {
+            "description": "Print Spooler"
+        },
+        "NETLOGON": {
+            "description": "Net Logon"
+        },
+        "RemoteRegistry": {
+            "description": "Remote Registry Service"
+        },
+        "WINS": {
+            "description": "Windows Internet Name Service (WINS)"
+        }
+    },
+    "printers": "",
+    "machines": null,
+    "domain_sid": null,
+    "errors": {
+        "listeners": {
+            "enum_listeners": [
+                "Could not connect to LDAP on 389/tcp: connection refused",
+                "Could not connect to LDAPS on 636/tcp: connection refused"
+            ]
+        },
+        "shares": {
+            "enum_shares": [
+                "Could not check share: STATUS_OBJECT_NAME_NOT_FOUND"
+            ]
+        }
+    }
+}

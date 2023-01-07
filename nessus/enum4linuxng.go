@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -147,6 +148,7 @@ func parseEnum4LinuxOutput(outputDir string) error {
 	enum4LinuxUniqueJSONFiles := localio.RemoveDuplicateStr(enum4LinuxJSONFiles)
 
 	var users []string
+	var ipsAndFQDNs []string
 	for _, jsonFile := range enum4LinuxUniqueJSONFiles {
 		data, err := os.ReadFile(jsonFile)
 		if err != nil {
@@ -160,11 +162,24 @@ func parseEnum4LinuxOutput(outputDir string) error {
 				users = append(users, parsedRaw.Get("username").String())
 			}
 		}
+		fqdnResult := parsed.Get("smb_domain_info.FQDN")
+		hostResult := parsed.Get("target.host")
+		ipsAndFQDNs = append(ipsAndFQDNs, fmt.Sprintf("%s %s", hostResult, fqdnResult))
 	}
+
+	sort.Sort(localio.StringSlice(users))
 	uniqueUsers := localio.RemoveDuplicateStr(users)
 	if len(uniqueUsers) >= 1 {
 		localio.Infof("Found %d users! Writing valid usernames to: %s", len(uniqueUsers), fmt.Sprintf("%s/valid-users.txt", outputDir))
 		if err = localio.WriteLines(uniqueUsers, fmt.Sprintf("%s/valid-users.txt", outputDir)); err != nil {
+			return localio.LogError(err)
+		}
+	}
+
+	sort.Sort(localio.StringSlice(ipsAndFQDNs))
+	uniqueFQDNs := localio.RemoveDuplicateStr(ipsAndFQDNs)
+	if len(uniqueFQDNs) >= 1 {
+		if err = localio.WriteLines(uniqueFQDNs, fmt.Sprintf("%s/fqdns-and-ips.txt", outputDir)); err != nil {
 			return localio.LogError(err)
 		}
 	}

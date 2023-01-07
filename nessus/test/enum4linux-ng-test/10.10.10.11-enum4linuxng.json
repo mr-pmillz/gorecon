@@ -1,0 +1,155 @@
+{
+    "target": {
+        "host": "10.10.10.11"
+    },
+    "credentials": {
+        "auth_method": "null",
+        "user": "",
+        "password": "",
+        "domain": "",
+        "ticket_file": "",
+        "nthash": "",
+        "random_user": "gihyxrba"
+    },
+    "listeners": {
+        "LDAP": {
+            "port": 389,
+            "accessible": true
+        },
+        "LDAPS": {
+            "port": 636,
+            "accessible": true
+        },
+        "SMB": {
+            "port": 445,
+            "accessible": true
+        },
+        "SMB over NetBIOS": {
+            "port": 139,
+            "accessible": false
+        }
+    },
+    "is_parent_dc": true,
+    "is_child_dc": false,
+    "long_domain": "gorecon.bhis",
+    "domain": null,
+    "nmblookup": null,
+    "smb_dialects": {
+        "Supported dialects": {
+            "SMB 1.0": false,
+            "SMB 2.02": true,
+            "SMB 2.1": true,
+            "SMB 3.0": true,
+            "SMB 3.1.1": true
+        },
+        "Preferred dialect": "SMB 3.0",
+        "SMB1 only": false,
+        "SMB signing required": true
+    },
+    "smb_domain_info": {
+        "NetBIOS computer name": "COOL-GORECON",
+        "NetBIOS domain name": "OFFICIAL_NESS",
+        "DNS domain": "gorecon.bhis",
+        "FQDN": "dynamic-universe.gorecon.bhis",
+        "Derived membership": "domain member",
+        "Derived domain": "OFFICIAL_NESS"
+    },
+    "sessions": {
+        "sessions_possible": true,
+        "null": true,
+        "password": false,
+        "kerberos": false,
+        "nthash": false,
+        "random_user": false
+    },
+    "rpc_domain_info": {
+        "Domain": "OFFICIAL_NESS",
+        "Domain SID": "S-1-5-21-1234567891-1234567891-1234567891",
+        "Membership": "domain member"
+    },
+    "os_info": {
+        "OS": "Windows 10, Windows Server 2019, Windows Server 2016",
+        "OS version": "10.0",
+        "OS release": "1607",
+        "OS build": "14393",
+        "Native OS": "not supported",
+        "Native LAN manager": "not supported",
+        "Platform id": null,
+        "Server type": null,
+        "Server type string": null
+    },
+    "users": null,
+    "groups": null,
+    "services": null,
+    "shares": {},
+    "policy": null,
+    "printers": null,
+    "machines": null,
+    "domain_sid": null,
+    "errors": {
+        "listeners": {
+            "enum_listeners": [
+                "Could not connect to SMB over NetBIOS on 139/tcp: timed out"
+            ]
+        },
+        "nmblookup": {
+            "enum_netbios": [
+                "Could not get NetBIOS names information via 'nmblookup': timed out"
+            ]
+        },
+        "domain": {
+            "enum_netbios": [
+                "Could not get NetBIOS names information via 'nmblookup': timed out"
+            ]
+        },
+        "sessions": {
+            "enum_sessions": [
+                "Could not establish random user session: STATUS_LOGON_FAILURE"
+            ]
+        },
+        "os_info": {
+            "enum_os_info": [
+                "Could not get OS info via 'srvinfo': STATUS_ACCESS_DENIED"
+            ]
+        },
+        "users": {
+            "enum_users_rpc": [
+                "Could not find users via 'querydispinfo': STATUS_ACCESS_DENIED",
+                "Could not find users via 'enumdomusers': STATUS_ACCESS_DENIED"
+            ],
+            "rid_cycling": [
+                "Could not get any SIDs"
+            ]
+        },
+        "groups": {
+            "enum_groups_rpc": [
+                "Could not get groups via 'enumalsgroups domain': STATUS_ACCESS_DENIED",
+                "Could not get groups via 'enumalsgroups builtin': STATUS_ACCESS_DENIED",
+                "Could not get groups via 'enumdomgroups': STATUS_ACCESS_DENIED"
+            ],
+            "rid_cycling": [
+                "Could not get any SIDs"
+            ]
+        },
+        "services": {
+            "enum_services": [
+                "Could not get RPC services via 'net rpc service list': STATUS_ACCESS_DENIED"
+            ]
+        },
+        "policy": {
+            "enum_policy": [
+                "SMB connection error on port 445/tcp: STATUS_ACCESS_DENIED"
+            ]
+        },
+        "printers": {
+            "enum_printers": [
+                "Could not get printer info via 'enumprinters': STATUS_ACCESS_DENIED"
+            ]
+        },
+        "machines": {
+            "rid_cycling": [
+                "Could not get any SIDs"
+            ]
+        }
+    }
+}

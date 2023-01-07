@@ -290,6 +290,24 @@ func getTargetsByPorts(n *Data, ports []string, protocol string) (map[string][]s
 	return targets, nil
 }
 
+//// getTargetsByPluginID ...
+// func getTargetsByPluginID(n *Data, pluginID []string) (map[string][]string, error) {
+//	targets := map[string][]string{}
+//	for _, reportHost := range n.Report.ReportHosts {
+//		for _, info := range reportHost.ReportItems {
+//			if localio.Contains(pluginID, info.PluginID) {
+//				if !localio.Contains(targets[reportHost.Name], strconv.Itoa(info.Port)) {
+//					targets[reportHost.Name] = append(targets[reportHost.Name], strconv.Itoa(info.Port))
+//					targets[reportHost.Name] = localio.RemoveDuplicateStr(targets[reportHost.Name])
+//					sort.Sort(localio.StringSlice(targets[reportHost.Name]))
+//				}
+//			}
+//		}
+//	}
+//
+//	return targets, nil
+// }
+
 // getTargetsBySVCName ...
 func getTargetsBySVCName(n *Data, svcKinds []string, protocol string) (map[string][]string, error) {
 	targets := map[string][]string{}
@@ -363,7 +381,7 @@ type HTMLReportRows struct {
 }
 
 // generateNessusSSLTLSReportHTMLFile writes an HTML report file with all the Nessus SSL & TLS Findings.
-func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity, error) {
+func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) ([]string, error) {
 	tlsAndSSLPluginIDs := []string{"81606", "69551", "15901", "57582", "83738", "51192", "35291", "124410", "20007", "89058", "60108", "31705", "26928", "83875", "78479", "104743", "157288", "45411", "42873", "65821"}
 	affectedHostsPluginID := map[string][]string{}
 	items := map[string][]string{}
@@ -376,6 +394,7 @@ func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity,
 		}
 	}
 
+	var allSSLTLSHosts []string
 	rows := make(bySeverity, 0, len(items))
 	for finding, info := range items {
 		outputFileName := strings.ToLower(strings.Join(strings.Split(clearString(finding), " "), "-"))
@@ -394,7 +413,10 @@ func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity,
 				FileName:      relativeOutputFilePathHosts,
 			},
 		})
+		allSSLTLSHosts = append(allSSLTLSHosts, sortedHosts...)
 	}
+	sort.Sort(localio.StringSlice(allSSLTLSHosts))
+	allSortedSSLTLSHosts := localio.RemoveDuplicateStr(allSSLTLSHosts)
 
 	sort.Slice(rows, func(i, j int) bool {
 		return rows[i].value.CVSSBaseScore > rows[j].value.CVSSBaseScore
@@ -451,7 +473,7 @@ func generateNessusSSLTLSReportHTMLFile(n *Data, outputDir string) (*bySeverity,
 		return nil, localio.LogError(err)
 	}
 
-	return &rows, nil
+	return allSortedSSLTLSHosts, nil
 }
 
 type SSLTLSRows struct {
@@ -537,11 +559,11 @@ func Parse(opts *Options) error {
 
 	switch {
 	case opts.TestSSL:
-		_, err = generateNessusSSLTLSReportHTMLFile(data, opts.Output)
+		targets, err := generateNessusSSLTLSReportHTMLFile(data, opts.Output)
 		if err != nil {
 			return localio.LogError(err)
 		}
-		if err = runTestSSL(opts.Output, true); err != nil {
+		if err = runTestSSL(opts.Output, targets, true); err != nil {
 			return localio.LogError(err)
 		}
 		if err = generateWeakSSLTLSFindingsReportHTMLFile(opts.Output); err != nil {
